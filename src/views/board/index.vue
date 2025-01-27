@@ -1,151 +1,191 @@
 <script setup>
-import defaultProductImg from '@/assets/images/product_default.jpg'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import DesriName from "@/components/DesriName.vue";
+import SystemSelect from "@/components/SystemSelect.vue";
+import defaultImage from "@/assets/images/product_default.png";
+import { getProductList } from "@/api/get-json";
 
 defineOptions({
-  name: 'boardPage'
-})
+  name: "boardPage"
+});
 
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { useProductStore } from '@/stores/products'
-import { useRouter } from 'vue-router'
-
-const productStore = useProductStore()
-
-
-const searchKeyword = ref('')
-const showSuggestions = ref(false)
-
-const isSearched = ref(false)
-
-
-const router = useRouter()
+const router = useRouter();
+const route = useRoute();
 
 const goToHome = () => {
-  router.push('/home')
-}
+  router.push("/home");
+};
+const boardDetail = ref(null);
+const fetchBoardDetail = async () => {
+  try {
+    const uri = `/${route.query.uri}`;
+    const response = await fetch(uri);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    boardDetail.value = await response.json();
+  } catch (error) {
+    console.error("获取板子详情失败：", error);
+  }
+};
+
+const searchKeyword = ref("");
+const showSuggestions = ref(false);
+const isSearched = ref(false);
+const searchInputRef = ref(null);
+const productList = ref([]);
 
 const searchSuggestions = computed(() => {
-  if (!searchKeyword.value) return []
-
-  return productStore.productList
-    .filter(item =>
-      item.name.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchKeyword.value.toLowerCase())
+  if (!searchKeyword.value) return [];
+  return productList.value
+    .filter(
+      item =>
+        item.name.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
+        item.vendor.toLowerCase().includes(searchKeyword.value.toLowerCase())
     )
-    .slice(0, 5)
-})
+    .slice(0, 5);
+});
 
-const handleSearchInput = (e) => {
-  searchKeyword.value = e.target.value
-  showSuggestions.value = true
-}
+const handleSearchInput = e => {
+  searchKeyword.value = e.target.value;
+  showSuggestions.value = true;
+};
 
-const handleSuggestionClick = (item) => {
-  searchKeyword.value = item.name
-  showSuggestions.value = false
-}
-
+const handleSuggestionClick = item => {
+  searchKeyword.value = item.name;
+  showSuggestions.value = false;
+};
 
 const handleSearch = () => {
   if (searchKeyword.value) {
-    showSuggestions.value = false
+    showSuggestions.value = false;
     router.push({
-      path: '/home',
-      query: {
-        keyword: searchKeyword.value
-      }
-    })
+      path: "/home",
+      query: { keyword: searchKeyword.value }
+    });
   }
-}
-
-const closeSearchSuggestions = (e) => {
-  if (!searchKeyword.value && !e.target.closest('.top-wrapper')) {
-    showSuggestions.value = false
-  }
-}
-
-const closeAllOptions = () => {
-  showOptions.value = {}
-}
-
-const showOptions = ref({})
-onMounted(() => {
-  document.addEventListener('click', closeAllOptions)
-  document.addEventListener('click', closeSearchSuggestions)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', closeAllOptions)
-  document.removeEventListener('click', closeSearchSuggestions)
-})
-
-const searchInputRef = ref(null)
+};
 
 const handleSearchIconClick = () => {
   if (!isSearched.value) {
-    isSearched.value = true
+    isSearched.value = true;
     nextTick(() => {
-      searchInputRef.value.focus()
-    })
+      searchInputRef.value.focus();
+    });
   }
-}
+};
 
 const handleInputBlur = () => {
   setTimeout(() => {
     if (!searchKeyword.value) {
-      showSuggestions.value = false
-      isSearched.value = false
-      searchInputRef.value.value = ''
+      showSuggestions.value = false;
+      isSearched.value = false;
+      searchInputRef.value= "";
     }
-  }, 200)
-}
+  }, 200);
+};
 
+const activeTab = ref(null);
+const currentIndex = ref(0);
+const showOptions = ref({});
 
-const proList = [
-  { id: 1, proUrl: defaultProductImg },
-  { id: 2, proUrl: defaultProductImg },
-  { id: 3, proUrl: defaultProductImg },
-  { id: 4, proUrl: defaultProductImg },
-  { id: 5, proUrl: defaultProductImg },
-  { id: 6, proUrl: defaultProductImg },
-  { id: 7, proUrl: defaultProductImg },
-  { id: 8, proUrl: defaultProductImg }
-]
-import desriName from '../../components/desriName.vue'
-import systemSelect from '../../components/systemSelect.vue'
+const systemTabs = computed(() => {
+  if (!boardDetail.value?.os) return [];
+  return Object.entries(boardDetail.value.os).map(([key]) => key);
+});
 
-const activeTab = ref('OpenEuler')
-const openEulerList = ([
-  {
-    id: 1, name: 'OpenEuler 24.03 SPI', content: 'xxxxx'
-  },
-  {
-    id: 2, name: 'OpenEuler 24.03 SPI', content: 'xxxxx'
-  },
-  {
-    id: 3, name: 'OpenEuler 24.03 SPI', content: 'xxxxx'
-  },
-  {
-    id: 4, name: 'OpenEuler 24.03 SPI', content: 'xxxxx'
-  },
-  {
-    id: 5, name: 'OpenEuler 24.03 SPI', content: 'xxxxx'
+const currentSystemVersions = computed(() => {
+  if (!boardDetail.value?.os || !activeTab.value) return [];
+  return boardDetail.value.os[activeTab.value] || [];
+});
+
+const currentVersion = computed(() => {
+  if (!currentSystemVersions.value.length) return null;
+  return (
+    currentSystemVersions.value[currentIndex.value] ||
+    currentSystemVersions.value[0]
+  );
+});
+
+const currentPictureIndex = ref(0);
+
+const processedPictures = computed(() => {
+  if (!boardDetail.value?.pictures || boardDetail.value.pictures.length === 0) {
+    return [defaultImage];
   }
-]
-)
-const eulerIndex = ref(0)
 
-const handleUpdateIndex = (newIndex) => {
-  if (newIndex >= 0 && newIndex < openEulerList.length) {
-    eulerIndex.value = newIndex
+  return boardDetail.value.pictures.map(pic => {
+    if (!pic) return defaultImage;
+    try {
+      return pic.startsWith("/") ? pic : `/${pic}`;
+    } catch (error) {
+      console.error("图片路径处理错误：", error);
+      return defaultImage;
+    }
+  });
+});
+
+const handleThumbnailClick = index => {
+  currentPictureIndex.value = index;
+};
+
+const handleUpdateIndex = newIndex => {
+  if (newIndex >= 0 && newIndex < currentSystemVersions.value.length) {
+    currentIndex.value = newIndex;
   }
-}
+};
 
+const closeSearchSuggestions = e => {
+  if (!searchKeyword.value && !e.target.closest(".top-wrapper")) {
+    showSuggestions.value = false;
+  }
+};
 
-watch(() => eulerIndex.value, (newIndex) => {
-  console.log('eulerIndex changed:', newIndex)
-  console.log('Current openEulerItem:', openEulerList[newIndex])
-})
+const closeAllOptions = () => {
+  showOptions.value = {};
+};
+
+onMounted(async () => {
+  try {
+    const response = await getProductList("../../../public");
+    productList.value = response.data;
+  } catch (error) {
+    console.error("获取产品列表失败:", error);
+  }
+
+  console.log("组件已挂载");
+  fetchBoardDetail();
+  document.addEventListener("click", closeAllOptions);
+  document.addEventListener("click", closeSearchSuggestions);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", closeAllOptions);
+  document.removeEventListener("click", closeSearchSuggestions);
+});
+
+watch(
+  () => route.query.uri,
+  newUri => {
+    if (newUri) {
+      fetchBoardDetail();
+    }
+  },
+  { immediate: true }
+);
+
+watch(
+  () => boardDetail.value?.os,
+  newOs => {
+    if (newOs && Object.keys(newOs).length > 0) {
+      activeTab.value = Object.keys(newOs)[0];
+    } else {
+      activeTab.value = null;
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -156,21 +196,42 @@ watch(() => eulerIndex.value, (newIndex) => {
       </div>
       <div class="back-to-home" v-show="!isSearched" @click="goToHome">
         <div class="back">
-          <img src="../../assets/icons/board/Frame.png" alt="">
+          <img src="@/assets/icons/board/Frame.png" alt="" />
         </div>
         <div>回首页</div>
       </div>
-      <div id="search" :class="{ 'active': isSearched }">
-        <input type="text" class="search-input" v-model="searchKeyword" @input="handleSearchInput" placeholder='说点什么吧'
-          @blur="handleInputBlur" ref="searchInputRef" v-show="isSearched" />
-        <div :class="['search-img', { 'search-button': searchKeyword }]"
-          @click="searchKeyword ? handleSearch() : handleSearchIconClick()">
-          <img v-if="!searchKeyword" src="@/assets/icons/home/Group 2.png" alt="" />
+      <div id="search" :class="{ active: isSearched }">
+        <input
+          type="text"
+          class="search-input"
+          v-model="searchKeyword"
+          @input="handleSearchInput"
+          placeholder="说点什么吧"
+          @blur="handleInputBlur"
+          ref="searchInputRef"
+          v-show="isSearched"
+        />
+        <div
+          :class="['search-img', { 'search-button': searchKeyword }]"
+          @click="searchKeyword ? handleSearch() : handleSearchIconClick()"
+        >
+          <img
+            v-if="!searchKeyword"
+            src="@/assets/icons/home/Group 2.png"
+            alt=""
+          />
           <button v-else class="search-text" type="button">搜 索</button>
         </div>
-        <div v-if="showSuggestions && searchSuggestions.length > 0" class="search-suggestions">
-          <div v-for="item in searchSuggestions" :key="item.id" class="suggestion-item"
-            @click="handleSuggestionClick(item)">
+        <div
+          v-if="showSuggestions && searchSuggestions.length > 0"
+          class="search-suggestions"
+        >
+          <div
+            v-for="item in searchSuggestions"
+            :key="item.id"
+            class="suggestion-item"
+            @click="handleSuggestionClick(item)"
+          >
             <div class="suggestion-content">
               <div class="suggestion-name">{{ item.name }}</div>
             </div>
@@ -178,19 +239,25 @@ watch(() => eulerIndex.value, (newIndex) => {
         </div>
       </div>
     </div>
-
   </div>
+
   <div class="info">
     <!-- 左侧图像 -->
     <div class="picture">
       <!-- 大图 -->
       <div class="screen">
-        <img src="../../assets/images/product_default.jpg" alt="">
+        <img :src="processedPictures[currentPictureIndex]" alt="产品图片" />
       </div>
       <!-- 小图预览 -->
       <div class="preview">
-        <div class="pre-item" v-for="item in proList" :key="item.id">
-          <img :src="item.proUrl" alt="">
+        <div
+          class="pre-item"
+          v-for="(pic, index) in processedPictures"
+          :key="index"
+          :class="{ active: currentPictureIndex === index }"
+          @click="handleThumbnailClick(index)"
+        >
+          <img :src="pic" alt="产品图片" />
         </div>
       </div>
     </div>
@@ -198,150 +265,148 @@ watch(() => eulerIndex.value, (newIndex) => {
     <div class="descri">
       <!-- 板卡信息 -->
       <div class="board-info">
-        <desriName name="板卡信息"></desriName>
+        <DesriName name="板卡信息"></DesriName>
         <div class="info-detail">
           <div id="board-block">
             <div id="title">厂商名称：</div>
-            <div id="content">最多十六个字展示</div>
+            <div id="content">{{ boardDetail?.vendor?.name }}</div>
           </div>
           <div id="board-block">
             <div id="title">Soc型号称：</div>
-            <div id="content">三十二个字符内</div>
+            <div id="content">{{ boardDetail?.soc?.name }}</div>
           </div>
           <div id="board-block">
             <div id="title">板卡类型:</div>
-            <div id="content">SOM+CAEEIER</div>
+            <div id="content">{{ boardDetail?.type }}</div>
           </div>
         </div>
       </div>
       <!-- ram配置 -->
-      <div class="ram">
-        <desriName name="RAM配置">
-
-        </desriName>
-        <div id="content">DDRx@xxxHz,4GB/8GB/16GB</div>
+      <div class="ram" v-if="boardDetail?.hardware?.ram">
+        <DesriName name="RAM配置"></DesriName>
+        <div id="content">
+          {{ boardDetail.hardware.ram?.type }} ,
+          {{ String(boardDetail.hardware.ram.capacity).replace(/,/g, "/") }}
+        </div>
       </div>
       <!-- 接口 -->
       <div class="port">
         <div id="board-block">
-          <desriName name="存储接口"></desriName>
+          <DesriName name="存储接口"></DesriName>
           <ul id="content" class="port-list">
-            <li>￮ SPI NOR-Flash@xxxMBits</li>
-            <li>￮ SDHC/SDXC 2.0 x1</li>
-            <li>￮ SATA 3.0 x2</li>
-            <li>￮ NVME M.2 x2</li>
-            <li>￮ eMMC 4.0 512MB/4GB/32GB x1</li>
+            <li v-for="item in boardDetail?.hardware?.storage" :key="item.type">
+              ￮ {{ item.type
+              }}{{ item.capacity ? " , " + item.capacity.join("/") : "" }}
+            </li>
           </ul>
+        </div>
+        <div id="board-block">
+          <DesriName name="高速接口"></DesriName>
+          <ul id="content" class="port-list">
+            <li
+              v-for="item in boardDetail?.hardware?.connectivity"
+              :key="item.type"
+            >
+              ￮ {{ item.type }} {{ item.revision }}
+              {{ item.nums ? `x${item.nums}` : "" }}
+            </li>
+          </ul>
+        </div>
 
-        </div>
         <div id="board-block">
-          <desriName name="高速接口"></desriName>
+          <DesriName name="低速接口"></DesriName>
           <ul id="content" class="port-list">
-            <li>￮ SPI NOR-Flash@xxxMBits</li>
-            <li>￮ SDHC/SDXC 2.0 x1</li>
-            <li>￮ SATA 3.0 x2</li>
-            <li>￮ NVME M.2 x2</li>
-            <li>￮ eMMC 4.0 512MB/4GB/32GB x1</li>
-          </ul>
-        </div>
-        <div id="board-block">
-          <desriName name="显示接口"></desriName>
-          <ul id="content" class="port-list">
-            <li>￮ SPI NOR-Flash@xxxMBits</li>
-            <li>￮ SDHC/SDXC 2.0 x1</li>
-            <li>￮ SATA 3.0 x2</li>
-            <li>￮ NVME M.2 x2</li>
-            <li>￮ eMMC 4.0 512MB/4GB/32GB x1</li>
-          </ul>
-        </div>
-        <div id="board-block">
-          <desriName name="低速接口"></desriName>
-          <ul id="content" class="port-list">
-            <li>￮ SPI NOR-Flash@xxxMBits</li>
+            <li></li>
           </ul>
         </div>
       </div>
+    </div>
+  </div>
 
+  <!-- tab 栏 -->
+  <div v-if="activeTab" class="system-tabs">
+    <div
+      class="tab-item"
+      v-for="tab in systemTabs"
+      :key="tab"
+      :class="{ active: activeTab === tab }"
+      @click="activeTab = tab"
+    >
+      {{ tab }}
     </div>
   </div>
-  <!-- 添加 tab 栏 -->
-  <div class="system-tabs">
-    <div class="tab-item" :class="{ active: activeTab === 'OpenEuler' }" @click="activeTab = 'OpenEuler'">
-      OpenEuler
-    </div>
-    <div class="tab-item" :class="{ active: activeTab === 'OpenRegular' }" @click="activeTab = 'OpenRegular'">
-      OpenRegular
-    </div>
-  </div>
-  <systemSelect :openEulerItem="openEulerList[eulerIndex]" :openEulerList="openEulerList"
-    @update-index="handleUpdateIndex"></systemSelect>
+
+  <SystemSelect
+    v-if="currentVersion && currentSystemVersions.length"
+    :item="currentVersion"
+    :itemList="currentSystemVersions"
+    @update-index="handleUpdateIndex"
+    :activeTab="activeTab"
+  >
+  </SystemSelect>
 </template>
 
 <style scoped lang="scss">
 @use "sass:color" as color;
 
-
 $primary-blue: #012fa6;
-$secondary-blue: #4A77CA;
+$secondary-blue: #4a77ca;
 $light-blue: #789edb;
 $border-color: #f1faff;
-
 
 .top-wrapper {
   display: flex;
   justify-content: center;
   position: relative;
 
-
   .top-bar {
-    margin: 0.8rem auto;
-    width: 39.5rem;
-    height: 3rem;
-    border-radius: 0.75rem;
+    margin: 25px 0 auto;
+    width: 1264px;
+    height: 96px;
+    border-radius: 24px;
     border-color: #f5fbfe;
     border: 1px solid #f1faff;
-    ;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #FFFFFF;
+    background: #ffffff;
     transition: all 0.3s ease;
     position: relative;
     box-sizing: border-box;
     z-index: 1000;
-    padding-right: 0.33rem;
+    padding-right: 10px;
     box-sizing: border-box;
-    box-shadow: 0rem 0.09rem 0.07rem 0rem rgba(1, 47, 166, 0.02),
-      0rem 0.21rem 0.17rem 0rem rgba(1, 47, 166, 0.03),
-      0rem 0.39rem 0.31rem 0rem rgba(1, 47, 166, 0.04),
-      0rem 0.7rem 0.56rem 0rem rgba(1, 47, 166, 0.04);
+    box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
+      0 7px 5px 0 rgba(1, 47, 166, 0.03),
+      0 12px 10px 0 rgba(1, 47, 166, 0.04),
+      0 22px 18px 0 rgba(1, 47, 166, 0.04);
 
     .circle-img {
-      width: 7rem;
-      height: 1.97rem;
+      width: 224px;
+      height: 63px;
       display: flex;
       align-items: center;
-      padding: 0.25rem 0 0.25rem 0.5rem;
+      padding: 8px 0 8px 16px;
 
       img {
-        width: 5rem;
-        height: 1.5rem;
+        width: 160px;
+        height: 48px;
         object-fit: contain;
-        margin-left: 0.5rem;
+        margin-left: 16px;
       }
     }
 
     .back-to-home {
       display: flex;
       align-items: center;
-      font-size: 0.94rem;
-      width: 4rem;
+      font-size: 30px;
+      width: 128px;
       justify-content: space-between;
       margin-right: auto;
 
-      img {
-        width: 1rem;
-        height: 1rem;
+      cursor:pointer img {
+        width: 32px;
+        height: 32px;
       }
     }
 
@@ -351,26 +416,26 @@ $border-color: #f1faff;
       align-items: center;
       background-color: transparent;
       transition: all 0.3s ease;
-      width: 19.22rem;
-      height: 2rem;
-      border-radius: 0.66rem;
-      padding: 0 0.5rem;
+      width: 615px;
+      height: 64px;
+      border-radius: 21px;
+      padding: 0 16px;
       box-sizing: border-box;
       position: relative;
 
       &.active {
-        background-color: #f0f0f0;
+        background-color: #f0f0f0 !important;
       }
 
       .back-to-home {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 16px;
         cursor: pointer;
         color: $light-blue;
-        font-size: 0.5rem;
+        font-size: 20px;
         font-family: PingFang SC-Regular;
-        margin-left: 1rem;
+        margin-left: 32px;
 
         &:hover {
           color: $primary-blue;
@@ -378,7 +443,7 @@ $border-color: #f1faff;
       }
 
       &:focus-within {
-        width: 19.22rem;
+        width: 615px;
 
         .search-input {
           pointer-events: none;
@@ -399,22 +464,23 @@ $border-color: #f1faff;
         color: $light-blue;
         width: 100%;
         border: none;
-        font-size: 0.5rem;
+        font-size: 20px;
         outline: none;
-        padding: 0 0.25rem;
+        padding: 0 8px;
         background-color: transparent;
         box-sizing: border-box;
 
         &::placeholder {
           color: transparent;
           opacity: 0.8;
-          font-size: 0.5rem;
+          font-size: 20px;
         }
       }
+
       .search-img {
-        width: 1.75rem;
-        height: 1.75rem;
-        padding: 0.25rem 0.63rem 0.24rem 0;
+        width: 56px;
+        height: 56px;
+        padding: 8px 20px 8px 0;
         box-sizing: border-box;
         display: flex;
         align-items: center;
@@ -424,14 +490,14 @@ $border-color: #f1faff;
 
         &.search-button {
           background: $primary-blue;
-          border-radius: 0.38rem;
-          margin-right: 0.5rem;
+          border-radius: 12px;
+          margin-right: 16px;
           padding: 0;
           cursor: pointer;
-          width: auto;
-          min-width: 2.97rem;
-          height: 1.34rem;
-          font-size: 0.63rem;
+          width: 95px;
+          min-width: 95px;
+          height: 43px;
+          font-size: 20px;
           text-align: center;
 
           &:hover {
@@ -441,7 +507,7 @@ $border-color: #f1faff;
           .search-text {
             width: 100%;
             height: 100%;
-            color: #FFFFFF;
+            color: #ffffff;
             background: none;
             border: none;
             cursor: pointer;
@@ -455,31 +521,32 @@ $border-color: #f1faff;
           }
         }
       }
+
       .search-suggestions {
         position: absolute;
         top: 85%;
         left: 0;
         width: 100%;
-        margin-top: 0.5rem;
-        background: #FFFFFF;
-        border-radius: 0.63rem;
-        box-shadow: 0rem 0.09rem 0.07rem 0rem rgba(1, 47, 166, 0.02),
-          0rem 0.21rem 0.17rem 0rem rgba(1, 47, 166, 0.03),
-          0rem 0.39rem 0.31rem 0rem rgba(1, 47, 166, 0.04),
-          0rem 0.7rem 0.56rem 0rem rgba(1, 47, 166, 0.04);
-        padding: 0.5rem;
+        margin-top: 16px;
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
+          0 7px 5px 0 rgba(1, 47, 166, 0.03),
+          0 12px 10px 0 rgba(1, 47, 166, 0.04),
+          0 22px 18px 0 rgba(1, 47, 166, 0.04);
+        padding: 16px;
         box-sizing: border-box;
-        border: 0.13rem solid #CCCCCC;
+        border: 4px solid #cccccc;
         z-index: 1001;
 
         .suggestion-item {
           display: flex;
           align-items: center;
-          height: 1.19rem;
-          padding: 0 0.75rem;
+          height: 38px;
+          padding: 0 24px;
           cursor: pointer;
           transition: all 0.3s ease;
-          border-radius: 0.38rem;
+          border-radius: 12px;
           box-sizing: border-box;
 
           &:hover {
@@ -488,66 +555,75 @@ $border-color: #f1faff;
 
           .suggestion-content {
             flex: 1;
-            overflow: hidden;
             white-space: nowrap;
 
             .suggestion-name {
-              font-size: 0.5rem;
-              overflow: hidden;
+              font-size: 20px;
               text-overflow: ellipsis;
             }
           }
 
           &.selected {
             background: rgba(1, 47, 166, 0.1);
-            border-radius: 0.31rem;
+            border-radius: 10px;
           }
         }
       }
     }
   }
-
 }
 
 .info {
-  width: 39.5rem;
+  width: 1264px;
   display: flex;
 
-  margin: 0 auto;
+  margin-top: 20px ;
+  margin-bottom: 40px;
   background-color: #fff;
-  box-shadow: 0rem 0.09rem 0.07rem 0rem rgba(1, 47, 166, 0.02), 0rem 0.21rem 0.17rem 0rem rgba(1, 47, 166, 0.03), 0rem 0.39rem 0.31rem 0rem rgba(1, 47, 166, 0.04), 0rem 0.7rem 0.56rem 0rem rgba(1, 47, 166, 0.04);
-  border-radius: 0.63rem;
+  box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
+    0 7px 5px 0 rgba(1, 47, 166, 0.03),
+    0 12px 10px 0 rgba(1, 47, 166, 0.04),
+    0 22px 18px 0 rgba(1, 47, 166, 0.04);
+  border-radius: 20px;
   border: 1px solid #f1faff;
-  ;
-
   .picture {
     flex: 2;
-    width: 10rem;
-    padding: 0.63rem 0 0.63rem 0.63rem;
+    width: 320px;
+    padding: 20px 0 20px 20px;
 
     .screen {
-      width: 9.11rem;
-      height: 12.03rem;
+      width: 292px;
+      height: 385px;
 
       img {
-        border-radius: 0.2rem;
+        border-radius: 6px;
       }
     }
 
     .preview {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.16rem;
-      margin-top: 0.44rem;
+      gap: 5px;
+      margin-top: 14px;
 
       .pre-item {
-        width: 1.69rem;
-        height: 1.02rem;
-        overflow: hidden;
-        border-radius: 0.1rem;
+        width: 54px;
+        height: 33px;
+        border-radius: 3px;
         display: flex;
         align-items: center;
         justify-content: center;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+
+        &.active {
+          border-color: $primary-blue;
+        }
+
+        &:hover {
+          border-color: $secondary-blue;
+        }
 
         img {
           width: 100%;
@@ -561,17 +637,13 @@ $border-color: #f1faff;
 
   .descri {
     flex: 8;
-    padding: 0.63rem;
+    padding: 20px;
     height: 100%;
 
     .info-detail {
       display: flex;
       justify-content: space-between;
-      margin-top: 0.38rem;
-
-
-
-
+      margin-top: 12px;
     }
 
     .port {
@@ -583,34 +655,32 @@ $border-color: #f1faff;
 }
 
 #title {
-  font-size: 0.44rem;
-  color: rgba(102, 102, 102, 1)
+  font-size: 18px;
+  color: rgba(102, 102, 102, 1);
 }
 
 #content {
-  font-size:
-    0.47rem;
-  margin-top: 0.13rem;
+  font-size: 16px;
+  margin-top: 4px;
   color: #333;
 
   li {
-    margin-top: 0.3rem;
+    margin-top: 10px;
   }
 }
 
 #board-block {
-  width: 9.09rem;
+  width: 291px;
 }
 
 .system-tabs {
   display: flex;
-  gap: 1rem;
-  margin: 1.25rem 0 1rem 1.5rem;
+  gap: 40px;
 
 
   .tab-item {
-    padding: 0.5rem 1rem;
-    font-size: 0.88rem;
+    padding-bottom: 8px;
+    font-size: 20px;
     color: #666;
     cursor: pointer;
     position: relative;
@@ -621,12 +691,12 @@ $border-color: #f1faff;
       font-weight: 500;
 
       &::after {
-        content: '';
+        content: "";
         position: absolute;
         bottom: -2px;
         left: 50%;
         transform: translateX(-50%);
-        width: 2rem;
+        width: 64px;
         height: 2px;
         background: $primary-blue;
       }
@@ -638,221 +708,4 @@ $border-color: #f1faff;
   }
 }
 
-.system-select {
-  width: 39.5rem;
-  margin: 1rem auto;
-  box-sizing: border-box;
-  background: #FFFFFF;
-  border-radius: 0.63rem;
-  border: 1px solid #f1faff;
-  box-shadow: 0rem 0.09rem 0.07rem 0rem rgba(1, 47, 166, 0.02),
-    0rem 0.21rem 0.17rem 0rem rgba(1, 47, 166, 0.03),
-    0rem 0.39rem 0.31rem 0rem rgba(1, 47, 166, 0.04),
-    0rem 0.7rem 0.56rem 0rem rgba(1, 47, 166, 0.04);
-  padding: 1rem;
-
-
-
-  .select-title {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1rem;
-
-    .title-text {
-      font-size: 0.88rem;
-      color: #333;
-      font-weight: 500;
-      margin-right: 0.5rem;
-    }
-
-    .title-line {
-      flex: 1;
-      height: 1px;
-      background: #E5E5E5;
-    }
-  }
-
-  .select-content {
-    .select-drop {
-      display: flex;
-      width: 14.5rem;
-      justify-content: space-between;
-
-      .select-row {
-
-
-
-
-        .select-label {
-          width: 4rem;
-          font-size: 0.44rem;
-          color: #666;
-        }
-
-        .select-box {
-          position: relative;
-          display: flex;
-          align-items: center;
-          margin-top: 0.3rem;
-
-          .select-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-          }
-
-          .kernel-tag {
-            position: absolute;
-            right: 2.5rem;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(1, 47, 166, 0.8);
-            color: white;
-            font-size: 0.34rem;
-            padding: 0.13rem 0.25rem;
-            border-radius: 0.13rem;
-
-          }
-
-          select {
-            width: 7rem;
-            height: 1.03rem;
-            border: 1px solid #E5E5E5;
-            border-radius: 0.25rem;
-            padding: 0 4rem 0 0.5rem;
-            font-size: 0.47rem;
-            color: #333;
-            outline: none;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            background: transparent;
-            box-sizing: border-box;
-            cursor: pointer;
-
-            &:focus {
-              border-color: $secondary-blue;
-            }
-          }
-
-          .dropdown-icon {
-            position: absolute;
-            right: 0.5rem;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 0.6rem;
-            height: 0.6rem;
-            pointer-events: none;
-          }
-        }
-      }
-    }
-
-    .file-list {
-      margin-top: 0.5rem;
-      max-height: 8.5rem;
-      overflow-y: auto; 
-      padding-right: 0.5rem; 
-      &::-webkit-scrollbar {
-        width: 0.25rem; 
-      }
-
-      &::-webkit-scrollbar-track {
-        background: transparent; 
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background: #e5e5e5; 
-        border-radius: 0.125rem; 
-      }
-
-      .file-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: #f5f5f5;
-        margin-top: 0.2rem;
-        border-radius: 0.2rem;
-        padding: 0.4rem 0.6rem;
-        box-sizing: border-box;
-        font-size: 0.47rem;
-
-        &:first-child {
-          margin-top: 0; 
-        }
-
-        .file-name {
-          font-size: 0.47rem;
-          color: #333;
-          flex: 1;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-
-        .file-size {
-          font-size: 0.75rem;
-          color: #666;
-          margin-left: 1rem;
-        }
-      }
-    }
-
-    .button-area {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 1rem;
-
-      .pagination {
-        display: flex;
-        justify-content: flex-end;
-        gap: 0.5rem;
-
-        button {
-          width: 1.75rem;
-          height: 1.25rem;
-          border: 0.05rem solid $primary-blue;
-          border-radius: 0.25rem;
-          background: #FFFFFF;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0.2rem;
-          color: $primary-blue;
-          font-size: 1rem;
-          font-weight: 600;
-
-          &:hover {
-            border-color: $secondary-blue;
-            color: $secondary-blue;
-          }
-        }
-      }
-
-      .help-btn {
-        margin-top: 0.1rem;
-
-        .btn-border {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 5.63rem;
-          height: 1.25rem;
-          border: 0.05rem solid $primary-blue;
-          border-radius: 0.31rem;
-          color: $primary-blue;
-          font-size: 0.63rem;
-          cursor: pointer;
-          transition: all 0.3s ease;
-
-          &:hover {
-            background: rgba(1, 47, 166, 0.1);
-          }
-        }
-      }
-    }
-  }
-}
 </style>

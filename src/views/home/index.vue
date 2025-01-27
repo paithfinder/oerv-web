@@ -1,246 +1,270 @@
 <script setup>
-import ProductItem from '@/components/productItem.vue'
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { useProductStore } from '@/stores/products'
-import { useRoute } from 'vue-router'
+import ProductItem from "@/components/ProductItem.vue";
+import { ref, computed, onMounted, nextTick,watch } from "vue";
+import { useRoute } from "vue-router";
+import { getProductList } from "@/api/get-json";
 
 defineOptions({
-  name: 'homePage'
-})
+  name: "homePage"
+});
 
-const productStore = useProductStore()
+const route = useRoute();
+const searchKeyword = ref("");
+const searchQuery = ref("");
+const showSuggestions = ref(false);
+const isSearched = ref(false);
+const searchInputRef = ref(null);
+const selectedOptions = ref({});
+const showOptions = ref({});
+const isSticky = ref(false);
+const showSearchInput = ref(false);
+const showBackToTop = ref(false);
+const productList = ref([]);
 
-const route = useRoute()
+const nameMapping = {
+  soc: "Soc型号",
+  isa: "指令集特性",
+  kernel: "内核版本",
+  userspace: "用户态空间",
+  status: "支持状态"
+};
 
-const menuList = [
-  {
-    id: 1,
-    name: "Soc型号",
-    item: ["PENDING", "ONTSUPPORT", "WSUPPORTED", "DEPRECATED"]
-  },
-  { id: 2, name: "指令集特性", item: ["PENDING", "ONTSUPPORT", "WSUPPORTED", "DEPRECATED"] },
-  { id: 3, name: "内核版本", item: ["PENDING", "ONTSUPPORT", "WSUPPORTED", "DEPRECATED"] },
-  { id: 4, name: "OE用户态版本", item: ["PENDING", "ONTSUPPORT", "WSUPPORTED", "DEPRECATED"] },
-  {
-    id: 5,
-    name: "支持状态",
-    item: ["PENDING", "ONTSUPPORT", "WSUPPORTED", "DEPRECATED"]
-  }
-];
+const dropMenu = computed(() => {
+  const keys = ["soc", "isa", "kernel", "userspace", "status"];
+  return keys.map((key, index) => {
+    const items = [
+      ...new Set(
+        productList.value
+          .map(board => {
+            if (Array.isArray(board[key])) {
+              return board[key];
+            }
+            return [board[key]];
+          })
+          .flat()
+          .filter(item => item)
+      )
+    ];
 
-
-const selectedOptions = ref({})
-
-
-const showOptions = ref({})
-
-
-const isSticky = ref(false)
-
-
-const showBackToTop = ref(false)
-
-
-const searchKeyword = ref('')
-const showSuggestions = ref(false)
-
-
-const isSearched = ref(false)
-
-
-const showSearchInput = ref(false)
-
+    return {
+      id: index + 1,
+      name: nameMapping[key],
+      item: items
+    };
+  });
+});
 
 const searchSuggestions = computed(() => {
-  if (!searchKeyword.value) return []
-
-  return productStore.productList
-    .filter(item =>
-      item.name.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchKeyword.value.toLowerCase())
+  if (!searchKeyword.value) return [];
+  return productList.value
+    .filter(
+      item =>
+        item.name.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
+        item.vendor.toLowerCase().includes(searchKeyword.value.toLowerCase())
     )
-    .slice(0, 5)
-})
+    .slice(0, 5);
+});
 
-
-const handleSearchInput = (e) => {
-  searchKeyword.value = e.target.value
-  showSuggestions.value = true
-}
-
-
-const handleSuggestionClick = (item) => {
-  searchKeyword.value = item.name
-  showSuggestions.value = false
-
-}
-
-
-const closeSearchSuggestions = (e) => {
-  if (!e.target.closest('.search-container')) {
-    showSuggestions.value = false
-  }
-}
-
-const scrollToTop = () => {
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth'
-  })
-}
-
-
-const handleMenuClick = (menuId, event) => {
-
-  event.stopPropagation()
-
-  showOptions.value[menuId] = !showOptions.value[menuId]
-
-  Object.keys(showOptions.value).forEach(key => {
-    if (Number(key) !== menuId) {
-      showOptions.value[key] = false
-    }
-  })
-}
-
-
-const handleOptionSelect = (menuId, option, event) => {
-
-  event.stopPropagation()
-  if (selectedOptions.value[menuId] === option) {
-    delete selectedOptions.value[menuId]
-  } else {
-    selectedOptions.value[menuId] = option
+const getFilteredByOptions = computed(() => {
+  if (Object.keys(selectedOptions.value).length === 0) {
+    return productList.value;
   }
 
-  showOptions.value[menuId] = false
-}
+  return productList.value.filter(product => {
+    return Object.entries(selectedOptions.value).every(
+      ([menuId, selectedValue]) => {
+        const key = Object.keys(nameMapping).find(
+          k =>
+            nameMapping[k] ===
+            dropMenu.value.find(item => item.id === Number(menuId))?.name
+        );
+        if (!key) return true;
 
-
-const closeAllOptions = () => {
-  showOptions.value = {}
-}
-
-onMounted(() => {
-  document.addEventListener('click', closeAllOptions)
-  document.addEventListener('click', closeSearchSuggestions)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', closeAllOptions)
-  document.removeEventListener('click', closeSearchSuggestions)
-})
-
-
-const getMenuTitle = computed(() => (menuId) => {
-  if (selectedOptions.value[menuId]) {
-    return selectedOptions.value[menuId]
-  }
-  return menuList.find(item => item.id === menuId)?.name
-})
-
-
-onMounted(() => {
-  const searchContainer = document.querySelector('.search-container')
-  const searchInput = document.querySelector('.search-input')
-  const originalPlaceholder = searchInput.placeholder
-
-  const handleScroll = () => {
-
-    showBackToTop.value = window.scrollY > 300
-
-    if (window.scrollY > 0) {
-      searchContainer.classList.add('sticky')
-      searchInput.placeholder = ''
-      isSticky.value = true
-      if (!searchKeyword.value) {
-        showSearchInput.value = false 
+        const productValue = product[key];
+        if (Array.isArray(productValue)) {
+          return productValue.includes(selectedValue);
+        }
+        return productValue === selectedValue;
       }
-    } else {
-      searchContainer.classList.remove('sticky')
-      searchInput.placeholder = originalPlaceholder
-      isSticky.value = false
-      showSearchInput.value = true 
-    }
-  }
-
-  window.addEventListener('scroll', handleScroll)
-
-  onUnmounted(() => {
-    window.removeEventListener('scroll', handleScroll)
-  })
-})
-
+    );
+  });
+});
 
 const filteredProductList = computed(() => {
-  if (!isSearched.value) {
-    return productStore.productList
+  let filtered = getFilteredByOptions.value;
+
+  if (isSearched.value) {
+    if (!searchQuery.value) {
+      return [];
+    }
+    const keyword = searchQuery.value.toLowerCase();
+    filtered = filtered.filter(
+      product =>
+        product.name.toLowerCase().includes(keyword) ||
+        product.vendor.toLowerCase().includes(keyword)
+    );
   }
 
+  return filtered;
+});
+
+const getMenuTitle = computed(() => menuId => {
+  if (selectedOptions.value[menuId]) {
+    return selectedOptions.value[menuId];
+  }
+  return dropMenu.value.find(item => item.id === menuId)?.name;
+});
+
+const handleSearchInput = e => {
+  searchKeyword.value = e.target.value;
   if (!searchKeyword.value) {
-    return []
+    isSearched.value = false;
+    searchQuery.value = "";
   }
-
-  const keyword = searchKeyword.value.toLowerCase()
-  return productStore.productList.filter(product =>
-    product.name.toLowerCase().includes(keyword) ||
-    product.description.toLowerCase().includes(keyword)
-  )
-})
-
+  showSuggestions.value = true;
+};
 
 const handleSearch = () => {
-  if (searchKeyword.value) {  
-    showSuggestions.value = false
-    isSearched.value = true
+  if (searchKeyword.value) {
+    showSuggestions.value = false;
+    isSearched.value = true;
+    searchQuery.value = searchKeyword.value;
+    const searchInput = document.querySelector("#search");
+    searchInput.style.backgroundColor = "transparent";
+    isSticky.value = false;
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
-    })
+      behavior: "smooth"
+    });
   }
-}
+};
 
+const handleSearchIconClick = () => {
+  if (isSticky.value && !searchKeyword.value) {
+    showSearchInput.value = true;
+    nextTick(() => {
+      const searchInput = document.querySelector("#search");
+      searchInput.style.backgroundColor = "#f0f0f0";
+      searchInputRef.value.focus();
+      searchInputRef.value.placeholder = "说点什么吧";
+    });
+  }
+};
 
 const handleInputBlur = () => {
   if (isSticky.value) {
     setTimeout(() => {
-      showSuggestions.value = false
+      showSuggestions.value = false;
       if (!searchKeyword.value) {
-        const searchInput = document.querySelector('#search')
-        showSearchInput.value = false 
-         searchInput.style.backgroundColor = 'transparent'
+        const searchInput = document.querySelector("#search");
+        showSearchInput.value = false;
+        searchInput.style.backgroundColor = "transparent";
       }
-    }, 200)
+    }, 200);
   }
-}
+};
 
+const handleSuggestionClick = item => {
+  searchKeyword.value = item.name;
+  showSuggestions.value = false;
+};
 
-const searchInputRef = ref(null)  
+const handleMenuClick = (menuId, event) => {
+  event.stopPropagation();
+  showOptions.value[menuId] = !showOptions.value[menuId];
+  Object.keys(showOptions.value).forEach(key => {
+    if (Number(key) !== menuId) {
+      showOptions.value[key] = false;
+    }
+  });
+};
 
-const handleSearchIconClick = () => {
-  if (isSticky.value) {
-    showSearchInput.value = true 
-    nextTick(() => {
-      const searchInput = document.querySelector('#search')
-      searchInput.style.backgroundColor = '#f0f0f0'
-      searchInputRef.value.focus()
-      searchInputRef.value.placeholder = '说点什么吧'
-    })
+const handleOptionSelect = (menuId, option, event) => {
+  event.stopPropagation();
+  if (selectedOptions.value[menuId] === option) {
+    delete selectedOptions.value[menuId];
+  } else {
+    selectedOptions.value[menuId] = option;
   }
-}
+  showOptions.value[menuId] = false;
+};
 
-onMounted(() => {
-  const keyword = route.query.keyword
+const scrollToTop = () => {
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+};
+
+const closeAllOptions = () => {
+  showOptions.value = {};
+};
+
+const closeSearchSuggestions = e => {
+  if (!e.target.closest(".search-container")) {
+    showSuggestions.value = false;
+  }
+};
+
+onMounted(async () => {
+  try {
+    const response = await getProductList();
+    productList.value = response.data;
+  } catch (error) {
+    console.error("获取产品列表失败:", error);
+  }
+
+  document.addEventListener("click", closeAllOptions);
+  document.addEventListener("click", closeSearchSuggestions);
+  const searchContainer = document.querySelector(".search-container");
+  const searchInput = document.querySelector(".search-input");
+  const originalPlaceholder = searchInput.placeholder;
+
+  const handleScroll = () => {
+    console.log('handleScroll',window.scrollY);
+    
+    showBackToTop.value = window.scrollY > 375;
+
+    if (window.scrollY > 375) {
+      isSticky.value = true;
+      searchInput.placeholder = "";
+      showSearchInput.value = false;
+      if (searchKeyword.value) {
+        const searchInputDiv = document.querySelector("#search");
+        searchInputDiv.style.backgroundColor = "#f0f0f0";
+        showSearchInput.value = true;
+      } else {
+        const searchInputDiv = document.querySelector("#search");
+        searchInputDiv.style.backgroundColor = "transparent";
+      }
+      searchContainer.classList.add("sticky");
+    } else if(window.scrollY < 300 && searchContainer.classList.contains('sticky')) {
+      isSticky.value = false;
+      const searchInputDiv = document.querySelector("#search");
+      searchInputDiv.style.backgroundColor = "transparent";
+      searchInput.placeholder = originalPlaceholder;
+      showSearchInput.value = true;
+      searchContainer.classList.remove("sticky");
+    }
+  };
+
+  window.addEventListener("scroll", handleScroll);
+
+  const keyword = route.query.keyword;
   if (keyword) {
-    searchKeyword.value = keyword
-    isSearched.value = true
-    handleSearch()
+    searchKeyword.value = keyword;
+    searchQuery.value = keyword;
+    isSearched.value = true;
+    handleSearch();
   }
+});
+watch(isSearched,(oldValue,newValue)=>{
+  console.log(oldValue,newValue)
 })
+console.log(isSearched.value,'我是search')
 </script>
 
 <template>
-
   <div class="logo">
     <img src="@/assets/logo/Frame 1@3x.svg" alt="OERC Logo" />
   </div>
@@ -251,18 +275,38 @@ onMounted(() => {
         <img v-else src="@/assets/icons/home/Group 4.png" alt="search icon" />
       </div>
       <div id="search">
-        <input type="text" class="search-input" v-model="searchKeyword" @input="handleSearchInput"
-          :placeholder="isSticky ? '' : '一款叫627453的超级棒产品'" @blur="handleInputBlur" ref="searchInputRef"
-          v-show="!isSticky || (isSticky && showSearchInput)" />
-        <div :class="['search-img', { 'search-button': searchKeyword }]"
-          @click="searchKeyword ? handleSearch() : handleSearchIconClick()">
-          <img v-if="!searchKeyword" src="@/assets/icons/home/Group 2.png" alt="" />
+        <input
+          type="text"
+          class="search-input"
+          v-model="searchKeyword"
+          @input="handleSearchInput"
+          :placeholder="isSticky ? '' : '一款叫627453的超级棒产品'"
+          @blur="handleInputBlur"
+          ref="searchInputRef"
+          v-show="!isSticky || (isSticky && showSearchInput)"
+        />
+        <div
+          :class="['search-img', { 'search-button': searchKeyword }]"
+          @click="searchKeyword ? handleSearch() : handleSearchIconClick()"
+        >
+          <img
+            v-if="!searchKeyword"
+            src="@/assets/icons/home/Group 2.png"
+            alt=""
+          />
           <button v-else class="search-text" type="button">搜 索</button>
         </div>
 
-        <div v-if="showSuggestions && searchSuggestions.length > 0" class="search-suggestions">
-          <div v-for="item in searchSuggestions" :key="item.id" class="suggestion-item"
-            @click="handleSuggestionClick(item)">
+        <div
+          v-if="showSuggestions && searchSuggestions.length > 0"
+          class="search-suggestions"
+        >
+          <div
+            v-for="item in searchSuggestions"
+            :key="item.id"
+            class="suggestion-item"
+            @click="handleSuggestionClick(item)"
+          >
             <div class="suggestion-content">
               <div class="suggestion-name">{{ item.name }}</div>
             </div>
@@ -272,23 +316,30 @@ onMounted(() => {
     </div>
   </div>
   <div class="drop-menu">
-    <ul v-for="(item) in menuList" :key="item.id">
+    <ul v-for="item in dropMenu" :key="item.id">
       <div class="menu-item" @click="handleMenuClick(item.id, $event)">
-        <li class="menu-title" :class="{
-          'selected-title': selectedOptions[item.id],
-          'active': showOptions[item.id]
-        }">
+        <li
+          class="menu-title"
+          :class="{
+            'selected-title': selectedOptions[item.id],
+            active: showOptions[item.id]
+          }"
+        >
           {{ getMenuTitle(item.id) }}
-          <div class="menu-img" :class="{ 'rotate': showOptions[item.id] }">
-            <img src="@/assets/icons/home/Group 5.png" alt="">
+          <div class="menu-img" :class="{ rotate: showOptions[item.id] }">
+            <img src="@/assets/icons/home/Group 5.png" alt="" />
           </div>
         </li>
       </div>
       <div class="options" v-if="item.item.length > 0 && showOptions[item.id]">
-        <li v-for="(option, idx) in item.item" :key="idx" class="option-item"
+        <li
+          v-for="(option, idx) in item.item"
+          :key="idx"
+          class="option-item"
           :class="{ selected: selectedOptions[item.id] === option }"
-          @click="handleOptionSelect(item.id, option, $event)">
-          <span class="radio-button"></span>
+          @click="handleOptionSelect(item.id, option, $event)"
+        >
+          <span class="selector"></span>
           {{ option }}
         </li>
       </div>
@@ -297,38 +348,43 @@ onMounted(() => {
 
   <div class="product-area">
     <div class="sum">
-      <template v-if="isSearched">
-        <span v-if="searchKeyword">
-          搜索到{{ filteredProductList.length }}个产品
+      <template v-if="isSearched || Object.keys(selectedOptions).length > 0">
+        <span v-if="filteredProductList.length > 0">
+          筛选后共{{ filteredProductList.length }}个产品
         </span>
         <span v-else>
           未找到相关产品
         </span>
       </template>
-      <span v-else>
-        共{{ productStore.productCount }}个产品
-      </span>
+      <span v-else>共{{ productList.length }}个产品</span>
     </div>
     <div class="product-list">
-      <ProductItem v-for="item in filteredProductList" :key="item.id" :info="item" />
+      <ProductItem
+        v-for="item in filteredProductList"
+        :key="item.name"
+        :info="item"
+      />
     </div>
   </div>
   <div class="back-to-top" v-show="showBackToTop" @click="scrollToTop">
-    <img src="@/assets/icons/home/Group 109@3x.svg" alt="back to top" class="up-arrow">
+    <img
+      src="@/assets/icons/home/Group 109@3x.svg"
+      alt="back to top"
+      class="up-arrow"
+    />
   </div>
-
 </template>
 
 <style scoped lang="scss">
 @use "sass:color" as color;
 $primary-blue: #012fa6;
-$secondary-blue: #4A77CA;
+$secondary-blue: #4a77ca;
 $light-blue: #789edb;
 $border-color: #f1faff;
 
 .logo {
-  margin: 6.69rem 19.53rem 0;
-  height: 1.97rem;
+  margin: 217px 625px 0;
+  height: 65px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -344,28 +400,27 @@ $border-color: #f1faff;
   position: sticky;
   top: 0;
   z-index: 100;
-  padding: 0.5rem 0;
   transition: all 0.3s ease;
   display: flex;
   justify-content: center;
 
   .search-bar {
-    margin: 1.5rem auto;
-    width: 27.19rem;
-    height: 2.25rem;
-    border-radius: 0.75rem;
-    border: 0.13rem solid $primary-blue;
+    margin: 48px auto;
+    width: 870px;
+    height: 72px;
+    border-radius: 24px;
+    border: 4px solid $primary-blue;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #FFFFFF;
+    background: #ffffff;
     transition: all 0.3s ease;
     box-sizing: border-box;
 
     .circle-img {
-      width: 1.75rem;
-      height: 1.75rem;
-      padding: 0.25rem 0 0.25rem 0.5rem;
+      width: 56px;
+      height: 56px;
+      padding: 8px 0 8px 16px;
     }
 
     #search {
@@ -374,30 +429,36 @@ $border-color: #f1faff;
       justify-content: space-between;
       align-items: center;
       width: 100%;
-      height: 2rem;
-      border-radius: 0.66rem;
+      height: 72px;
+      border-radius: 24px;
       box-sizing: border-box;
+      background-color: transparent;
+      transition: background-color 0.3s ease;
+
+      &.active {
+        background-color: #f0f0f0;
+      }
 
       .search-input {
         font-family: PingFang SC-Regular;
         color: $light-blue;
         width: 100%;
         border: none;
-        font-size: 0.5rem;
+        font-size: 20px;
         outline: none;
-        padding: 0 0.25rem;
+        padding: 0 8px;
 
         &::placeholder {
           color: $light-blue;
           opacity: 0.8;
-          font-size: 0.5rem;
+          font-size: 20px;
         }
       }
 
       .search-img {
-        width: 1.75rem;
-        height: 1.75rem;
-        padding: 0.25rem 0.63rem 0.24rem 0;
+        width: 56px;
+        height: 56px;
+        padding: 8px 20px 8px 0;
         box-sizing: border-box;
         display: flex;
         align-items: center;
@@ -406,14 +467,13 @@ $border-color: #f1faff;
 
         &.search-button {
           background: $primary-blue;
-          border-radius: 0.38rem;
-          margin-right: 0.5rem;
+          border-radius: 12px;
+          margin-right: 16px;
           padding: 0;
           cursor: pointer;
-          width: auto;
-          min-width: 2.97rem;
-          height: 1.34rem;
-          font-size: 0.63rem;
+          width: 95px;
+          height: 43px;
+          font-size: 20px;
           text-align: center;
 
           &:hover {
@@ -423,7 +483,7 @@ $border-color: #f1faff;
           .search-text {
             width: 100%;
             height: 100%;
-            color: #FFFFFF;
+            color: #ffffff;
             background: none;
             border: none;
             cursor: pointer;
@@ -437,49 +497,45 @@ $border-color: #f1faff;
           }
         }
       }
-
     }
   }
 
   &.sticky {
-
-    padding: 0.8rem 0;
+    padding: 25px 0 0;
 
     .search-bar {
       position: relative;
-      width: 39.5rem;
-      height: 3rem;
+      width: 1264px;
+      height: 96px;
       margin: 0;
       border-color: $border-color;
-      padding-right: 0.33rem;
-      box-shadow: 0rem 0.09rem 0.07rem 0rem rgba(1, 47, 166, 0.02),
-        0rem 0.21rem 0.17rem 0rem rgba(1, 47, 166, 0.03),
-        0rem 0.39rem 0.31rem 0rem rgba(1, 47, 166, 0.04),
-        0rem 0.7rem 0.56rem 0rem rgba(1, 47, 166, 0.04);
+      padding-right: 11px;
+      box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
+        0 7px 5px 0 rgba(1, 47, 166, 0.03), 0 12px 10px 0 rgba(1, 47, 166, 0.04),
+        0 22px 18px 0 rgba(1, 47, 166, 0.04);
 
       .circle-img {
-        padding: 0.25rem 0 0.25rem 0.5rem;
-        width: 7rem;
-        height: 1.97rem;
+        padding: 8px 0 8px 16px;
+        width: 224px;
+        height: 63px;
         display: flex;
         align-items: center;
 
         img {
-          width: 5rem;
-          height: 1.5rem;
+          width: 160px;
+          height: 48px;
           object-fit: contain;
-          margin-left: 0.5rem;
+          margin-left: 16px;
         }
       }
 
       #search {
         background-color: transparent;
         transition: all 0.3s ease;
-        width: 19.22rem;
-
-      
+        width: 615px;
 
         &:focus-within {
+          background-color: #f0f0f0;
           .search-input {
             pointer-events: none;
 
@@ -504,15 +560,8 @@ $border-color: #f1faff;
 
         .search-img {
           margin-left: auto;
-
-          &:hover {
-            &+#search {
-              background-color: #f0f0f0;
-            }
-          }
         }
       }
-
     }
 
     .search-suggestions {
@@ -520,46 +569,40 @@ $border-color: #f1faff;
       position: absolute;
       top: 85%;
       left: 0;
-      margin-top: 0.5rem;
-      border: 0.13rem solid #CCCCCC;
+      margin-top: 16px;
+      border: 4px solid #cccccc;
       z-index: 1001;
-      padding: 0.5rem;
-      border-radius: 0.63rem;
-      box-shadow: 0rem 0.09rem 0.07rem 0rem rgba(1, 47, 166, 0.02),
-        0rem 0.21rem 0.17rem 0rem rgba(1, 47, 166, 0.03),
-        0rem 0.39rem 0.31rem 0rem rgba(1, 47, 166, 0.04),
-        0rem 0.7rem 0.56rem 0rem rgba(1, 47, 166, 0.04);
-      padding: 0.5rem;
+      padding: 16px;
+      border-radius: 20px;
+      box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
+        0 7px 5px 0 rgba(1, 47, 166, 0.03), 0 12px 10px 0 rgba(1, 47, 166, 0.04),
+        0 22px 18px 0 rgba(1, 47, 166, 0.04);
       box-sizing: border-box;
     }
-
   }
 
   .search-suggestions {
     position: absolute;
-    width: 27.19rem;
-    top: -0.13rem;
-    right: -0.13rem; 
-
-    background: #FFFFFF;
-
-    border-radius: 0.75rem;
-    box-shadow: 0rem 0.09rem 0.07rem 0rem rgba(1, 47, 166, 0.02),
-      0rem 0.21rem 0.17rem 0rem rgba(1, 47, 166, 0.03),
-      0rem 0.39rem 0.31rem 0rem rgba(1, 47, 166, 0.04),
-      0rem 0.7rem 0.56rem 0rem rgba(1, 47, 166, 0.04);
-    padding: 2.5rem 0 0.5rem 0; 
+    width: 870px;
+    top: -4px;
+    right: -4px;
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
+      0 7px 5px 0 rgba(1, 47, 166, 0.03), 0 12px 10px 0 rgba(1, 47, 166, 0.04),
+      0 22px 18px 0 rgba(1, 47, 166, 0.04);
+    padding: 80px 0 16px 0;
     box-sizing: border-box;
-    z-index: -1; 
+    z-index: -1;
 
     .suggestion-item {
       display: flex;
       align-items: center;
-      height: 1.19rem;
-      padding: 0 0.75rem;
+      height: 38px;
+      padding: 0 24px;
       cursor: pointer;
       transition: all 0.3s ease;
-      border-radius: 0.38rem;
+      border-radius: 12px;
 
       &:hover {
         background: rgba(1, 47, 166, 0.1);
@@ -567,52 +610,48 @@ $border-color: #f1faff;
 
       .suggestion-content {
         flex: 1;
-        overflow: hidden;
         white-space: nowrap;
 
         .suggestion-name {
-          font-size: 0.5rem;
-          overflow: hidden;
+          font-size: 20px;
           text-overflow: ellipsis;
         }
       }
 
       &.selected {
         background: rgba(1, 47, 166, 0.1);
-        border-radius: 0.31rem;
+        border-radius: 10px;
       }
     }
   }
 }
 
 .drop-menu {
-  margin-top: 0.75rem;
+  margin-top: 24px;
   display: flex;
-  gap: 0.5rem;
+  gap: 16px;
   justify-content: center;
 
   .menu-item {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
-    width: 6.25rem;
-    height: 1.5rem;
+    gap: 8px;
+    width: 200px;
+    height: 48px;
 
     .menu-title {
       display: flex;
       align-items: center;
-      gap: 0.25rem;
-      font-size: 0.75rem;
+      gap: 8px;
+      font-size: 24px;
       font-weight: 500;
       color: $secondary-blue;
       cursor: pointer;
       font-family: PingFang SC-Regular;
       transition: all 0.3s ease;
       white-space: nowrap;
-      overflow: hidden;
       text-overflow: ellipsis;
-
 
       &.selected-title {
         color: $primary-blue;
@@ -625,10 +664,10 @@ $border-color: #f1faff;
     }
 
     .menu-img {
-      height: 0.63rem;
-      width: 0.63rem;
+      height: 20px;
+      width: 20px;
       transition: transform 0.3s ease;
-      margin-left: 0.25rem;
+      margin-left: 8px;
 
       &.rotate {
         transform: rotate(180deg);
@@ -644,21 +683,21 @@ $border-color: #f1faff;
 
   .options {
     position: absolute;
-    width: 6.78rem;
+    width: 217px;
     height: auto;
-    padding: 0.5rem 0;
-    box-shadow: 0rem 0.63rem 0.63rem 0rem rgba(0, 18, 99, 0.2);
-    border-radius: 0.63rem;
-    background: #FFFFFF;
-    margin-top: 0.5rem;
+    padding: 16px 0;
+    box-shadow: 0 20px 20px 0 rgba(0, 18, 99, 0.2);
+    border-radius: 20px;
+    background: #ffffff;
+    margin-top: 16px;
     z-index: 10;
 
     .option-item {
       display: flex;
       align-items: center;
-      padding: 0.5rem 0.75rem;
-      gap: 0.5rem;
-      font-size: 0.5rem;
+      padding: 16px 24px;
+      gap: 16px;
+      font-size: 20px;
       color: #666666;
       transition: all 0.3s ease;
 
@@ -667,18 +706,18 @@ $border-color: #f1faff;
         color: $primary-blue;
       }
 
-      .radio-button {
-        width: 0.75rem;
-        height: 0.75rem;
+      .selector {
+        width: 24px;
+        height: 24px;
+        position: relative;
         border: 1px solid #666666;
         border-radius: 50%;
-        position: relative;
 
         &::after {
-          content: '';
+          content: "";
           position: absolute;
-          width: 0.5rem;
-          height: 0.5rem;
+          width: 16px;
+          height: 16px;
           background: transparent;
           border-radius: 50%;
           top: 50%;
@@ -691,7 +730,7 @@ $border-color: #f1faff;
         color: $primary-blue;
         background: rgba(1, 47, 166, 0.1);
 
-        .radio-button {
+        .selector {
           border-color: $primary-blue;
 
           &::after {
@@ -704,51 +743,49 @@ $border-color: #f1faff;
 }
 
 .product-area {
-  padding: 0 2rem;
-  margin: 2.72rem auto;
-
+  width: 1264px;
+  margin: 87px auto;
+  box-sizing: border-box;
   .sum {
-    font-size: 0.44rem;
+    font-size: 18px;
     color: $light-blue;
-    margin-bottom: 0.41rem;
-    margin-left: 1rem;
+    margin-bottom: 13px;
+    margin-left: 32px;
   }
 
   .product-list {
     display: flex;
-    gap: 0.5rem;
+    gap: 16px;
     flex-wrap: wrap;
-
   }
 }
 
 .back-to-top {
   position: fixed;
-  right: 2rem;
-  bottom: 2rem;
-  width: 2.25rem;
-  height: 2.25rem;
-  background: #FFFFFF;
+  right: 64px;
+  bottom: 64px;
+  width: 72px;
+  height: 72px;
+  background: #ffffff;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0rem 0.09rem 0.07rem 0rem rgba(1, 47, 166, 0.02),
-    0rem 0.21rem 0.17rem 0rem rgba(1, 47, 166, 0.03),
-    0rem 0.39rem 0.31rem 0rem rgba(1, 47, 166, 0.04),
-    0rem 0.7rem 0.56rem 0rem rgba(1, 47, 166, 0.04);
+  box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
+    0 7px 5px 0 rgba(1, 47, 166, 0.03), 0 12px 10px 0 rgba(1, 47, 166, 0.04),
+    0 22px 18px 0 rgba(1, 47, 166, 0.04);
   transition: all 0.3s ease;
   z-index: 100;
 
   &:hover {
-    transform: translateY(-0.25rem);
-    box-shadow: 0rem 0.13rem 0.25rem rgba(1, 47, 166, 0.15);
+    transform: translateY(-8px);
+    box-shadow: 0 4px 8px rgba(1, 47, 166, 0.15);
   }
 
   .up-arrow {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: 40px;
+    height: 40px;
     transform: none;
   }
 }

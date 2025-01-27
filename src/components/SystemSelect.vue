@@ -1,0 +1,899 @@
+<script setup>
+import "github-markdown-css";
+import { marked } from "marked";
+import { ref, computed, defineComponent, onMounted, watch } from "vue";
+import DesriName from "@/components/DesriName.vue";
+
+const props = defineProps({
+  item: {
+    type: Object,
+    required: true
+  },
+  itemList: {
+    type: Array,
+    required: true
+  },
+  activeTab: {
+    type: String
+  }
+});
+const emit = defineEmits(["update-index"]);
+
+const currentIndex = computed(() => {
+  return props.itemList.findIndex(
+    listItem => listItem.name === props.item.name
+  );
+});
+
+const pageIndicator = computed(() => {
+  return `${currentIndex.value + 1}/${props.itemList.length}`;
+});
+
+const handlePrevClick = () => {
+  const newIndex = currentIndex.value - 1;
+  if (newIndex >= 0) {
+    emit("update-index", newIndex);
+  }
+};
+
+const handleNextClick = () => {
+  const newIndex = currentIndex.value + 1;
+  if (newIndex < props.itemList.length) {
+    emit("update-index", newIndex);
+  }
+};
+
+const selectedItem = ref(null);
+const currentFiles = computed(() => {
+  if (!props.item?.imagesuites?.[0]?.files) return [];
+  return props.item.imagesuites[0].files;
+});
+
+const handleFileClick = async index => {
+  selectedItem.value = index;
+  // const fileUrl = currentFiles.value[index].url
+  // try {
+  //     const response = await fetch(fileUrl, { method: 'HEAD' })
+  //     if (response.ok) {
+  //         return response.headers.get('Content-Length')
+  //     }
+  //     return null
+  // } catch (error) {
+  //     console.error('HEAD请求出错：', error)
+  //     return null
+  // }
+};
+
+const handleDownload = async index => {
+  try {
+    const fileUrl = currentFiles.value[index].url;
+    if (!fileUrl) {
+      console.error("下载链接不存在");
+      return;
+    }
+    const fileName = fileUrl.split("/").pop();
+    const link = document.createElement("a");
+    link.href = fileUrl;
+    link.download = fileName || "download";
+    link.target = "_blank";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error("下载文件失败：", error);
+  }
+};
+
+const kernelOptions = computed(() => {
+  const allImageSuites = props.itemList.flatMap(item => item.imagesuites || []);
+  const allKernels = allImageSuites.map(suite => ({
+    value: `${suite.kernel.type}-${suite.kernel.branch}`,
+    label: `${suite.kernel.type}-${suite.kernel.branch}`,
+    version: suite.kernel.version,
+    hasKernelSource: suite.kernel.type === "RVCK"
+  }));
+  return Array.from(
+    allKernels
+      .reduce((map, item) => {
+        if (!map.has(item.label)) map.set(item.label, item);
+        return map;
+      }, new Map())
+      .values()
+  );
+});
+
+const packageOptions = computed(() => {
+  if (!props.itemList) return [];
+  const allImageSuites = props.itemList.flatMap(item => item.imagesuites || []);
+  return Array.from(
+    new Set(
+      allImageSuites.map(suite =>
+        JSON.stringify({
+          value: suite.userspace,
+          label: suite.userspace
+        })
+      )
+    )
+  ).map(str => JSON.parse(str));
+});
+
+const selectedKernel = ref(kernelOptions.value[0]?.value || "");
+const selectedPackage = ref(packageOptions.value[0]?.value || "");
+const isDropdownOpen = ref(false);
+const isPackageDropdownOpen = ref(false);
+const currentHoverItem = ref(null);
+const currentPackageHoverItem = ref(null);
+
+const handleSelect = option => {
+  selectedKernel.value = option.value;
+  currentHoverItem.value = null;
+  isDropdownOpen.value = false;
+};
+
+const handlePackageSelect = option => {
+  selectedPackage.value = option.value;
+  currentPackageHoverItem.value = null;
+  isPackageDropdownOpen.value = false;
+};
+
+const showHelpDialog = ref(false);
+const helpMd = ref(null);
+const parsedMarkdown = ref("");
+
+const handleHelpClick = () => {
+  showHelpDialog.value = true;
+};
+
+const handleCloseDialog = () => {
+  showHelpDialog.value = false;
+};
+
+const loadDocs = async () => {
+  const docs = props.item.imagesuites[0].docs;
+  if (docs && docs.length > 0) {
+    try {
+      const docPath = `/${docs[0]}`;
+      const response = await fetch(docPath);
+      if (!response.ok) {
+        throw new Error('md文档获取失败')
+      }
+      let markdown = await response.text();
+
+      markdown = markdown.replace(
+        /!\[([^\]]*)\]\(\.\/([^)]+)\)/g,
+        (match, alt, imgPath) => {
+          const basePath = docPath.substring(0, docPath.lastIndexOf("/"));
+          return `![${alt}](${basePath}/${imgPath})`;
+        }
+      );
+      parsedMarkdown.value = marked(markdown);
+      helpMd.value = true;
+    } catch (error) {
+      console.error("加载文档失败：", error);
+      helpMd.value = null;
+      parsedMarkdown.value = "";
+    }
+  }
+};
+
+watch(currentIndex, () => {
+  loadDocs();
+});
+
+onMounted(() => {
+  loadDocs();
+});
+defineComponent({
+  helpMd
+});
+</script>
+
+<template>
+  <div class="system-select">
+    <div class="select-title">
+      <div class="title-text">{{ props.activeTab }} {{ props.item.name }}</div>
+    </div>
+    <div class="select-content">
+      <div class="select-drop">
+        <div class="select-row">
+          <div class="select-label">内核版本:</div>
+          <div class="select-box">
+            <div class="select-wrapper">
+              <div
+                class="custom-select"
+                @click="isDropdownOpen = !isDropdownOpen"
+              >
+                <div class="selected-value">
+                  {{
+                    kernelOptions.find(opt => opt.value === selectedKernel)
+                      ?.label
+                  }}
+                  <span
+                    v-if="
+                      kernelOptions.find(opt => opt.value === selectedKernel)
+                        ?.hasKernelSource
+                    "
+                    class="kernel-source-tag"
+                    >内核同源</span
+                  >
+                </div>
+                <img
+                  src="../assets/icons/board/Group 85@3x.svg"
+                  alt="dropdown"
+                  class="dropdown-icon"
+                  :class="{ rotated: isDropdownOpen }"
+                />
+              </div>
+              <div v-show="isDropdownOpen" class="dropdown-menu">
+                <div
+                  v-for="option in kernelOptions"
+                  :key="option.value"
+                  class="dropdown-item"
+                  :class="{ selected: option.value === currentHoverItem }"
+                  @mouseenter="currentHoverItem = option.value"
+                  @mouseleave="currentHoverItem = null"
+                  @click="handleSelect(option)"
+                >
+                  <div class="option-content">
+                    <span class="option-label">{{ option.label }}</span>
+
+                    <span
+                      v-if="option.hasKernelSource"
+                      class="kernel-source-tag"
+                      >内核同源</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="select-row">
+          <div class="select-label">用户态包组:</div>
+          <div class="select-box">
+            <div class="select-wrapper">
+              <div
+                class="custom-select"
+                @click="isPackageDropdownOpen = !isPackageDropdownOpen"
+              >
+                <div class="selected-value">
+                  {{
+                    packageOptions.find(opt => opt.value === selectedPackage)
+                      ?.label
+                  }}
+                </div>
+                <img
+                  src="../assets/icons/board/Group 85@3x.svg"
+                  alt="dropdown"
+                  class="dropdown-icon"
+                  :class="{ rotated: isPackageDropdownOpen }"
+                />
+              </div>
+              <div v-show="isPackageDropdownOpen" class="dropdown-menu">
+                <div
+                  v-for="option in packageOptions"
+                  :key="option.value"
+                  class="dropdown-item"
+                  :class="{
+                    selected: option.value === currentPackageHoverItem
+                  }"
+                  @mouseenter="currentPackageHoverItem = option.value"
+                  @mouseleave="currentPackageHoverItem = null"
+                  @click="handlePackageSelect(option)"
+                >
+                  <div class="option-content">
+                    <span class="option-label">{{ option.label }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="file-list">
+        <div
+          class="file-item"
+          v-for="(item, index) in currentFiles"
+          :key="index"
+          :class="{ active: selectedItem === index }"
+          @click="handleFileClick(index)"
+        >
+          <div class="file-name">{{ item.url }}</div>
+          <div class="file-info">
+            <span class="file-size"></span>
+            <span
+              v-if="selectedItem === index"
+              class="download-btn"
+              @click.stop="handleDownload(index)"
+            >
+              点击下载
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="button-area">
+        <div class="help-btn">
+          <div class="btn-border" @click="handleHelpClick">查看帮助文档</div>
+        </div>
+        <div class="pagination">
+          <span class="page-indicator">{{ pageIndicator }}</span>
+          <button class="prev-btn" @click="handlePrevClick">←</button>
+
+          <button class="next-btn" @click="handleNextClick">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="help-dialog"
+    v-if="showHelpDialog"
+    @click.self="handleCloseDialog"
+  >
+    <div class="dialog-content">
+      <DesriName :name="props.activeTab + ' ' + props.item.name" />
+      <div class="selectedGroup">
+        <div class="version">
+          <div class="label">内核版本：</div>
+          <div class="value">{{ selectedKernel }}</div>
+        </div>
+        <div class="package">
+          <div class="label">用户态包组：</div>
+          <div class="value">{{ selectedPackage }}</div>
+        </div>
+      </div>
+      <div id="file-list">
+        <div
+          class="file-item"
+          v-for="(item, index) in currentFiles"
+          :key="index"
+          :class="{ active: selectedItem === index }"
+          @click="handleFileClick(index)"
+        >
+          <div class="file-name">{{ item.url }}</div>
+          <div class="file-info">
+            <span class="file-size">128GB</span>
+            <span
+              v-if="selectedItem === index"
+              class="download-btn"
+              @click.stop="handleDownload(index)"
+            >
+              点击下载
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="upload-area">
+        <div class="upload-text" v-if="helpMd">
+          <div class="markdown-body" v-html="parsedMarkdown"></div>
+        </div>
+        <div v-else>暂无文档</div>
+      </div>
+      <div class="description">
+        <div class="desc-title">板卡说明：</div>
+        <div class="desc-content">
+          {{
+            props.item.imagesuites[currentIndex.value]?.comment
+              ? props.item.imagesuites[currentIndex.value].comment
+              : "暂无说明"
+          }}
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped lang="scss">
+$primary-blue: #012fa6;
+$secondary-blue: #4a77ca;
+$light-blue: #789edb;
+$border-color: #f1faff;
+
+.system-select {
+  width: 1264px;
+  margin: 20px auto;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #f1faff;
+  padding: 32px;
+
+  .select-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+
+    .title-text {
+      font-size: 20px;
+      color: #333;
+      font-weight: 500;
+      margin-right: 16px;
+    }
+
+    .title-line {
+      flex: 1;
+      height: 1px;
+      background: #e5e5e5;
+    }
+  }
+
+  .select-content {
+    .select-drop {
+      display: flex;
+      gap: 16px;
+
+      .select-row {
+        display: flex;
+        flex-direction: column;
+
+        .select-label {
+          min-width: 128px;
+          font-size: 16px;
+          color: #666;
+        }
+
+        .select-box {
+          position: relative;
+          display: flex;
+          align-items: center;
+          margin-top: 10px;
+
+          .select-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+
+            .kernel-source-tag {
+              display: inline-block;
+              padding: 3px 10px;
+              background-color: #3459b8;
+              color: #ffffff;
+              border-radius: 6px;
+              font-size: 13px;
+              margin-left: 10px;
+            }
+          }
+
+          select {
+            min-width: 224px;
+            width: auto;
+            height: 33px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 0 64px 0 16px;
+            font-size: 16px;
+            color: #333;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background: transparent;
+            box-sizing: border-box;
+            cursor: pointer;
+
+            &:focus {
+              border-color: $secondary-blue;
+            }
+
+            option {
+              padding: 16px;
+              background: #ffffff;
+
+              &:checked {
+                background: #e6f7ff;
+                color: #333;
+              }
+
+              &:hover {
+                background: #e6f7ff;
+              }
+            }
+          }
+
+          .dropdown-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 19px;
+            height: 19px;
+            pointer-events: none;
+            transition: transform 0.3s ease;
+
+            &.rotated {
+              transform: translateY(-50%) rotate(180deg);
+            }
+          }
+        }
+      }
+    }
+
+    .button-area {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+
+      .pagination {
+        display: flex;
+        justify-content: flex-end;
+        align-items: flex-end;
+        gap: 16px;
+
+        button {
+          width: 56px;
+          height: 40px;
+          border: 2px solid $primary-blue;
+          border-radius: 8px;
+          background: #ffffff;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 6px;
+          color: $primary-blue;
+          font-size: 32px;
+          font-weight: 600;
+
+          &:hover {
+            border-color: $secondary-blue;
+            color: $secondary-blue;
+          }
+        }
+
+        .page-indicator {
+          font-size: 16px;
+          color: #666;
+
+          min-width: 32px;
+          text-align: right;
+          height: 32px;
+          line-height: 32px;
+        }
+      }
+
+      .help-btn {
+        margin-top: 3px;
+
+        .btn-border {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 180px;
+          height: 40px;
+          border: 2px solid $primary-blue;
+          border-radius: 10px;
+          color: $primary-blue;
+          font-size: 20px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+
+          &:hover {
+            background: rgba(1, 47, 166, 0.1);
+          }
+        }
+      }
+    }
+  }
+}
+
+select:focus {
+  option {
+    padding: 16px;
+
+    &:checked {
+      background: #e6f7ff;
+      color: #333;
+    }
+  }
+}
+
+.help-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+
+  .dialog-content {
+    width: 80%;
+    max-width: 1200px;
+    max-height: 98vh;
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 4.16px 8px rgba(0, 0, 0, 0.15);
+    position: relative;
+    animation: dialogFadeIn 0.3s ease;
+    padding: 0 48px 24px 48px;
+    overflow-y: auto;
+    
+
+    .selectedGroup {
+      display: flex;
+      gap: 64px;
+      margin-top: 32px;
+
+      .version,
+      .package {
+        display: flex;
+
+        flex-direction: column;
+        justify-content: flex-start;
+
+        .label {
+          font-size: 16px;
+          color: #666666;
+        }
+
+        .value {
+          font-size: 16px;
+          color: #333333;
+          margin-top: 6px;
+        }
+      }
+    }
+
+    .help-file-list {
+      margin-top: 32px;
+
+      .file-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #f5f5f5;
+        margin-top: 6px;
+        border-radius: 6px;
+        padding: 13px 19px;
+        box-sizing: border-box;
+        font-size: 16px;
+
+        .file-name {
+          font-size: 16px;
+          color: #333333;
+          flex: 1;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .file-size {
+          font-size: 16px;
+          color: #666666;
+          margin-left: 32px;
+        }
+      }
+    }
+
+    .upload-area {
+      width: 100%;
+      height: 350px;
+      background: #f5f5f5;
+      margin-top: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+
+      .upload-text {
+        max-height: 100%;
+        width: 100%;
+        overflow-y: auto;
+      }
+    }
+
+    .description {
+      margin-top: 24px;
+
+      .desc-title {
+        font-size: 16px;
+        color: #666666;
+        margin-bottom: 16px;
+      }
+
+      .desc-content {
+        font-size: 16px;
+        color: #333333;
+      }
+    }
+  }
+}
+
+@keyframes dialogFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-32px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.custom-select {
+  min-width: 224px;
+  width: auto;
+  height: 33px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 0 64px 0 16px;
+  font-size: 16px;
+  color: #333;
+  background-color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  position: relative;
+  box-sizing: border-box;
+
+  .selected-value {
+    display: flex;
+    align-items: center;
+  }
+
+  &:hover {
+    border-color: $primary-blue;
+  }
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  margin-top: 6px;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 6px;
+}
+
+.dropdown-item {
+  padding: 10px;
+  cursor: pointer;
+  box-sizing: border-box;
+
+  &:hover {
+    background: #e8f2ff;
+    border-radius: 10px;
+  }
+
+  &.selected {
+    background: #e8f2ff;
+  }
+
+  .option-content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
+  .option-label {
+    font-size: 16px;
+    color: #333;
+  }
+}
+
+.markdown-body {
+  font-size: 16px !important;
+  padding: 20px 0 0 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+#file-list {
+  margin-top: 16px;
+  max-height: 224px;
+  overflow-y: auto;
+  padding-right: 16px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+    border-radius: 20px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #e5e5e5;
+    border-radius: 4px;
+  }
+
+  .file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f5f5f5;
+    margin-top: 6px;
+    border-radius: 6px;
+    padding: 13px 19px;
+    box-sizing: border-box;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:first-child {
+      margin-top: 0;
+    }
+
+    .file-name {
+      font-size: 16px;
+      color: #333;
+      flex: 1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-size {
+      font-size: 16px;
+      color: #666;
+      margin-left: 32px;
+    }
+
+    &.active {
+      background-color: #466edb;
+      color: white;
+
+      .file-name,
+      .file-size {
+        color: white;
+      }
+    }
+
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .download-btn {
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
+:deep(.markdown-body) {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-top: 32px;
+    margin-bottom: 16px;
+  }
+
+  p {
+    margin: 16px 0;
+  }
+
+  code {
+    background-color: #f6f8fa;
+    padding: 6px 13px;
+    border-radius: 3px;
+  }
+
+  pre {
+    background-color: #f6f8fa;
+    padding: 32px;
+    border-radius: 6px;
+    overflow-x: auto;
+  }
+}
+</style>
