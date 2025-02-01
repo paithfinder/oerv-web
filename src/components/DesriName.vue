@@ -20,7 +20,7 @@ const props = defineProps({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 20px;
+  font-size: 16px;
   margin-top: 24px;
 
   .blueBlock {

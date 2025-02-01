@@ -403,10 +403,10 @@ $border-color: #f1faff;
   transition: all 0.3s ease;
   display: flex;
   justify-content: center;
-
+  width:100%;
   .search-bar {
     margin: 48px auto;
-    width: 870px;
+    width: 65%;
     height: 72px;
     border-radius: 24px;
     border: 4px solid $primary-blue;
@@ -421,6 +421,7 @@ $border-color: #f1faff;
       width: 56px;
       height: 56px;
       padding: 8px 0 8px 16px;
+      box-sizing: border-box;
     }
 
     #search {
@@ -447,7 +448,7 @@ $border-color: #f1faff;
         font-size: 20px;
         outline: none;
         padding: 0 8px;
-
+        box-sizing: border-box;
         &::placeholder {
           color: $light-blue;
           opacity: 0.8;
@@ -470,6 +471,7 @@ $border-color: #f1faff;
           border-radius: 12px;
           margin-right: 16px;
           padding: 0;
+          box-sizing: border-box;
           cursor: pointer;
           width: 95px;
           height: 43px;
@@ -502,7 +504,7 @@ $border-color: #f1faff;
 
   &.sticky {
     padding: 25px 0 0;
-
+    box-sizing: border-box;
     .search-bar {
       position: relative;
       width: 1264px;
@@ -513,14 +515,14 @@ $border-color: #f1faff;
       box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
         0 7px 5px 0 rgba(1, 47, 166, 0.03), 0 12px 10px 0 rgba(1, 47, 166, 0.04),
         0 22px 18px 0 rgba(1, 47, 166, 0.04);
-
+        box-sizing: border-box;
       .circle-img {
         padding: 8px 0 8px 16px;
         width: 224px;
         height: 63px;
         display: flex;
         align-items: center;
-
+        box-sizing: border-box;
         img {
           width: 160px;
           height: 48px;
@@ -600,6 +602,7 @@ $border-color: #f1faff;
       align-items: center;
       height: 38px;
       padding: 0 24px;
+      box-sizing: border-box;
       cursor: pointer;
       transition: all 0.3s ease;
       border-radius: 12px;
@@ -629,17 +632,18 @@ $border-color: #f1faff;
 .drop-menu {
   margin-top: 24px;
   display: flex;
-  gap: 16px;
+  margin:0 auto;
   justify-content: center;
-
-  .menu-item {
+  width:80%;
+  ul {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    width: 200px;
+    width: auto;
     height: 48px;
-
+    flex:1;
+    position: relative;
     .menu-title {
       display: flex;
       align-items: center;
@@ -679,27 +683,30 @@ $border-color: #f1faff;
         object-fit: contain;
       }
     }
-  }
-
-  .options {
+    .options {
     position: absolute;
+    top:100%;
+    left: 0;
     width: 217px;
     height: auto;
     padding: 16px 0;
-    box-shadow: 0 20px 20px 0 rgba(0, 18, 99, 0.2);
+    box-sizing: border-box;
+    box-shadow: 0 20px 20px 10px rgba(0, 18, 99, 0.2);
     border-radius: 20px;
     background: #ffffff;
-    margin-top: 16px;
     z-index: 10;
+    margin-top:10px;
 
     .option-item {
       display: flex;
       align-items: center;
       padding: 16px 24px;
+      box-sizing: border-box;
       gap: 16px;
       font-size: 20px;
       color: #666666;
       transition: all 0.3s ease;
+
 
       &:hover {
         background: rgba(1, 47, 166, 0.1);
@@ -740,24 +747,37 @@ $border-color: #f1faff;
       }
     }
   }
+  }
+
+  
 }
 
 .product-area {
-  width: 1264px;
   margin: 87px auto;
+  width:100%;
   box-sizing: border-box;
-  .sum {
-    font-size: 18px;
-    color: $light-blue;
-    margin-bottom: 13px;
-    margin-left: 32px;
-  }
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
-  .product-list {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
+  .sum {
+  font-size: 18px;
+  width: 240px;
+  color: $light-blue;
+  margin-right:auto;
+  margin-left:7%;
+
+}
+
+.product-list {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px; 
+}
 }
 
 .back-to-top {
@@ -789,4 +809,5 @@ $border-color: #f1faff;
     transform: none;
   }
 }
+
 </style>

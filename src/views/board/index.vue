@@ -358,10 +358,10 @@ $border-color: #f1faff;
   display: flex;
   justify-content: center;
   position: relative;
-
+  width:100%;
   .top-bar {
     margin: 25px 0 auto;
-    width: 1264px;
+    width: 90%;
     height: 96px;
     border-radius: 24px;
     border-color: #f5fbfe;
@@ -387,7 +387,7 @@ $border-color: #f1faff;
       display: flex;
       align-items: center;
       padding: 8px 0 8px 16px;
-
+      box-sizing: border-box;
       img {
         width: 160px;
         height: 48px;
@@ -574,7 +574,7 @@ $border-color: #f1faff;
 }
 
 .info {
-  width: 1264px;
+  width: 90%;
   display: flex;
 
   margin-top: 20px ;
@@ -590,7 +590,7 @@ $border-color: #f1faff;
     flex: 2;
     width: 320px;
     padding: 20px 0 20px 20px;
-
+    box-sizing: border-box;
     .screen {
       width: 292px;
       height: 385px;
@@ -639,28 +639,30 @@ $border-color: #f1faff;
     flex: 8;
     padding: 20px;
     height: 100%;
-
-    .info-detail {
+    box-sizing: border-box;
+    .board-info{
+      .info-detail {
       display: flex;
-      justify-content: space-between;
       margin-top: 12px;
+ 
+    }
     }
 
     .port {
       display: flex;
       flex-wrap: wrap;
-      justify-content: space-between;
+
     }
   }
 }
 
 #title {
-  font-size: 18px;
+  font-size: 14px;
   color: rgba(102, 102, 102, 1);
 }
 
 #content {
-  font-size: 16px;
+  font-size: 15px;
   margin-top: 4px;
   color: #333;
 
@@ -670,22 +672,23 @@ $border-color: #f1faff;
 }
 
 #board-block {
-  width: 291px;
+  width: 33%;
 }
 
 .system-tabs {
   display: flex;
   gap: 40px;
-
-
+  margin-right: auto;
+  width:90%;
+  margin:0 auto;
   .tab-item {
     padding-bottom: 8px;
-    font-size: 20px;
+    font-size: 18px;
     color: #666;
     cursor: pointer;
     position: relative;
     transition: all 0.3s ease;
-
+    box-sizing: border-box;
     &.active {
       color: $primary-blue;
       font-weight: 500;

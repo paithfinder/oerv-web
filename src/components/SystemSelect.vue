@@ -1,7 +1,7 @@
 <script setup>
 import "github-markdown-css";
 import { marked } from "marked";
-import { ref, computed, defineComponent, onMounted, watch } from "vue";
+import { ref, computed, defineComponent, onMounted, watch, onUnmounted } from "vue";
 import DesriName from "@/components/DesriName.vue";
 
 const props = defineProps({
@@ -180,12 +180,29 @@ watch(currentIndex, () => {
   loadDocs();
 });
 
+
+const closeDropdowns = (e) => {
+  if (!e.target.closest('.select-wrapper')) {
+    isDropdownOpen.value = false;
+    isPackageDropdownOpen.value = false;
+  }
+};
+
 onMounted(() => {
   loadDocs();
+  document.addEventListener('click', closeDropdowns);
 });
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeDropdowns);
+});
+
 defineComponent({
   helpMd
 });
+const getFileName = (url) => {
+  return url.split('/').pop();
+};
 </script>
 
 <template>
@@ -201,7 +218,7 @@ defineComponent({
             <div class="select-wrapper">
               <div
                 class="custom-select"
-                @click="isDropdownOpen = !isDropdownOpen"
+                @click.stop="isDropdownOpen = !isDropdownOpen"
               >
                 <div class="selected-value">
                   {{
@@ -255,7 +272,7 @@ defineComponent({
             <div class="select-wrapper">
               <div
                 class="custom-select"
-                @click="isPackageDropdownOpen = !isPackageDropdownOpen"
+                @click.stop="isPackageDropdownOpen = !isPackageDropdownOpen"
               >
                 <div class="selected-value">
                   {{
@@ -293,25 +310,25 @@ defineComponent({
       </div>
 
       <div id="file-list">
-        <div
+        <a
           class="file-item"
           v-for="(item, index) in currentFiles"
           :key="index"
           :class="{ active: selectedItem === index }"
           @click="handleFileClick(index)"
+          :href="item.url"
         >
-          <div class="file-name">{{ item.url }}</div>
+          <div class="file-name">{{ getFileName(item.url) }}</div>
           <div class="file-info">
             <span class="file-size"></span>
             <span
-              v-if="selectedItem === index"
               class="download-btn"
               @click.stop="handleDownload(index)"
             >
               点击下载
             </span>
           </div>
-        </div>
+        </a>
       </div>
 
       <div class="button-area">
@@ -346,25 +363,24 @@ defineComponent({
         </div>
       </div>
       <div id="file-list">
-        <div
+        <a
           class="file-item"
           v-for="(item, index) in currentFiles"
           :key="index"
-          :class="{ active: selectedItem === index }"
           @click="handleFileClick(index)"
+          :href="item.url"
         >
-          <div class="file-name">{{ item.url }}</div>
+          <div class="file-name">{{ getFileName(item.url) }}</div>
           <div class="file-info">
             <span class="file-size">128GB</span>
             <span
-              v-if="selectedItem === index"
               class="download-btn"
               @click.stop="handleDownload(index)"
             >
               点击下载
             </span>
           </div>
-        </div>
+        </a>
       </div>
 
       <div class="upload-area">
@@ -394,7 +410,7 @@ $light-blue: #789edb;
 $border-color: #f1faff;
 
 .system-select {
-  width: 1264px;
+  width: 90%;
   margin: 20px auto;
   box-sizing: border-box;
   background: #ffffff;
@@ -797,7 +813,9 @@ select:focus {
   max-height: 224px;
   overflow-y: auto;
   padding-right: 16px;
-
+  a{
+    text-decoration: none;
+  }
   &::-webkit-scrollbar {
     width: 8px;
     border-radius: 20px;
@@ -843,7 +861,21 @@ select:focus {
       margin-left: 32px;
     }
 
-    &.active {
+    .file-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .download-btn {
+        display: none;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+    }
+
+    &:hover {
       background-color: #466edb;
       color: white;
 
@@ -851,18 +883,9 @@ select:focus {
       .file-size {
         color: white;
       }
-    }
-
-    .file-info {
-      display: flex;
-      align-items: center;
-      gap: 16px;
 
       .download-btn {
-        color: white;
-        font-size: 16px;
-        cursor: pointer;
-        white-space: nowrap;
+        display: inline-block;
       }
     }
   }
