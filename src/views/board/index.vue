@@ -399,14 +399,47 @@ $border-color: #f1faff;
     .back-to-home {
       display: flex;
       align-items: center;
-      font-size: 30px;
-      width: 128px;
+      font-size: 24px;
+      width: 110px;
       justify-content: space-between;
       margin-right: auto;
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 12px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      color: $secondary-blue;
+      background: rgba(74, 119, 202, 0.05);
+      
+      .back {
+        display: flex;
+        align-items: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        
+        img {
+          width: 24px;
+          height: 24px;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+      }
 
-      cursor:pointer img {
-        width: 32px;
-        height: 32px;
+      &:hover {
+        color: $primary-blue;
+        background: rgba(1, 47, 166, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(1, 47, 166, 0.1);
+
+        .back {
+          transform: translateX(-4px);
+          
+          img {
+            transform: scale(1.1);
+          }
+        }
+      }
+
+      &:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(1, 47, 166, 0.1);
       }
     }
 

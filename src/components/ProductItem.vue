@@ -50,7 +50,7 @@ const productImage = computed(() => {
   transition: all 0.3s ease;
   transform: translateY(0);
   cursor: pointer;
-
+  margin-top: 20px;
   &:hover {
     box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.15);
     transform: translateY(-8px);
@@ -99,4 +99,5 @@ const productImage = computed(() => {
     font-family: PingFang SC-Regular;
   }
 }
+
 </style>

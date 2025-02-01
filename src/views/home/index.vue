@@ -1,6 +1,6 @@
 <script setup>
 import ProductItem from "@/components/ProductItem.vue";
-import { ref, computed, onMounted, nextTick,watch } from "vue";
+import { ref, computed, onMounted, nextTick, watch } from "vue";
 import { useRoute } from "vue-router";
 import { getProductList } from "@/api/get-json";
 
@@ -181,11 +181,7 @@ const handleMenuClick = (menuId, event) => {
 
 const handleOptionSelect = (menuId, option, event) => {
   event.stopPropagation();
-  if (selectedOptions.value[menuId] === option) {
-    delete selectedOptions.value[menuId];
-  } else {
-    selectedOptions.value[menuId] = option;
-  }
+  selectedOptions.value[menuId] = option;
   showOptions.value[menuId] = false;
 };
 
@@ -206,6 +202,12 @@ const closeSearchSuggestions = e => {
   }
 };
 
+const handleResetOption = (menuId, event) => {
+  event.stopPropagation();
+  delete selectedOptions.value[menuId];
+  showOptions.value[menuId] = false;
+};
+
 onMounted(async () => {
   try {
     const response = await getProductList();
@@ -221,9 +223,9 @@ onMounted(async () => {
   const originalPlaceholder = searchInput.placeholder;
 
   const handleScroll = () => {
-    console.log('handleScroll',window.scrollY);
-    
-    showBackToTop.value = window.scrollY > 375;
+    console.log("handleScroll", window.scrollY);
+
+    showBackToTop.value = window.scrollY > 500;
 
     if (window.scrollY > 375) {
       isSticky.value = true;
@@ -238,7 +240,10 @@ onMounted(async () => {
         searchInputDiv.style.backgroundColor = "transparent";
       }
       searchContainer.classList.add("sticky");
-    } else if(window.scrollY < 300 && searchContainer.classList.contains('sticky')) {
+    } else if (
+      window.scrollY < 300 &&
+      searchContainer.classList.contains("sticky")
+    ) {
       isSticky.value = false;
       const searchInputDiv = document.querySelector("#search");
       searchInputDiv.style.backgroundColor = "transparent";
@@ -258,10 +263,10 @@ onMounted(async () => {
     handleSearch();
   }
 });
-watch(isSearched,(oldValue,newValue)=>{
-  console.log(oldValue,newValue)
-})
-console.log(isSearched.value,'我是search')
+watch(isSearched, (oldValue, newValue) => {
+  console.log(oldValue, newValue);
+});
+console.log(isSearched.value, "我是search");
 </script>
 
 <template>
@@ -333,6 +338,13 @@ console.log(isSearched.value,'我是search')
       </div>
       <div class="options" v-if="item.item.length > 0 && showOptions[item.id]">
         <li
+          class="option-item reset-option"
+          @click="handleResetOption(item.id, $event)"
+        >
+          <span class="reset-icon">↺</span>
+          重置
+        </li>
+        <li
           v-for="(option, idx) in item.item"
           :key="idx"
           class="option-item"
@@ -352,9 +364,7 @@ console.log(isSearched.value,'我是search')
         <span v-if="filteredProductList.length > 0">
           筛选后共{{ filteredProductList.length }}个产品
         </span>
-        <span v-else>
-          未找到相关产品
-        </span>
+        <span v-else> 未找到相关产品 </span>
       </template>
       <span v-else>共{{ productList.length }}个产品</span>
     </div>
@@ -397,13 +407,14 @@ $border-color: #f1faff;
 }
 
 .search-container {
+  box-sizing: border-box;
   position: sticky;
   top: 0;
   z-index: 100;
   transition: all 0.3s ease;
   display: flex;
   justify-content: center;
-  width:100%;
+  width: 100%;
   .search-bar {
     margin: 48px auto;
     width: 65%;
@@ -416,6 +427,55 @@ $border-color: #f1faff;
     background: #ffffff;
     transition: all 0.3s ease;
     box-sizing: border-box;
+    position: relative;
+    #search {
+      position: static !important;
+      .search-suggestions {
+        position: absolute;
+        width: 100%;
+        top: -4px;
+        right: -4px;
+        background: #ffffff;
+        border-radius: 24px;
+        box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
+          0 7px 5px 0 rgba(1, 47, 166, 0.03),
+          0 12px 10px 0 rgba(1, 47, 166, 0.04),
+          0 22px 18px 0 rgba(1, 47, 166, 0.04);
+        padding: 80px 0 16px 0;
+        box-sizing: border-box;
+        z-index: -1;
+
+        .suggestion-item {
+          display: flex;
+          align-items: center;
+          height: 38px;
+          padding: 0 24px;
+          box-sizing: border-box;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border-radius: 12px;
+
+          &:hover {
+            background: rgba(1, 47, 166, 0.1);
+          }
+
+          .suggestion-content {
+            flex: 1;
+            white-space: nowrap;
+
+            .suggestion-name {
+              font-size: 20px;
+              text-overflow: ellipsis;
+            }
+          }
+
+          &.selected {
+            background: rgba(1, 47, 166, 0.1);
+            border-radius: 10px;
+          }
+        }
+      }
+    }
 
     .circle-img {
       width: 56px;
@@ -507,7 +567,7 @@ $border-color: #f1faff;
     box-sizing: border-box;
     .search-bar {
       position: relative;
-      width: 1264px;
+      width: 90%;
       height: 96px;
       margin: 0;
       border-color: $border-color;
@@ -515,7 +575,7 @@ $border-color: #f1faff;
       box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
         0 7px 5px 0 rgba(1, 47, 166, 0.03), 0 12px 10px 0 rgba(1, 47, 166, 0.04),
         0 22px 18px 0 rgba(1, 47, 166, 0.04);
-        box-sizing: border-box;
+      box-sizing: border-box;
       .circle-img {
         padding: 8px 0 8px 16px;
         width: 224px;
@@ -535,7 +595,7 @@ $border-color: #f1faff;
         background-color: transparent;
         transition: all 0.3s ease;
         width: 615px;
-
+        position: relative !important;
         &:focus-within {
           background-color: #f0f0f0;
           .search-input {
@@ -563,67 +623,22 @@ $border-color: #f1faff;
         .search-img {
           margin-left: auto;
         }
-      }
-    }
-
-    .search-suggestions {
-      width: 100%;
-      position: absolute;
-      top: 85%;
-      left: 0;
-      margin-top: 16px;
-      border: 4px solid #cccccc;
-      z-index: 1001;
-      padding: 16px;
-      border-radius: 20px;
-      box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
-        0 7px 5px 0 rgba(1, 47, 166, 0.03), 0 12px 10px 0 rgba(1, 47, 166, 0.04),
-        0 22px 18px 0 rgba(1, 47, 166, 0.04);
-      box-sizing: border-box;
-    }
-  }
-
-  .search-suggestions {
-    position: absolute;
-    width: 870px;
-    top: -4px;
-    right: -4px;
-    background: #ffffff;
-    border-radius: 24px;
-    box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
-      0 7px 5px 0 rgba(1, 47, 166, 0.03), 0 12px 10px 0 rgba(1, 47, 166, 0.04),
-      0 22px 18px 0 rgba(1, 47, 166, 0.04);
-    padding: 80px 0 16px 0;
-    box-sizing: border-box;
-    z-index: -1;
-
-    .suggestion-item {
-      display: flex;
-      align-items: center;
-      height: 38px;
-      padding: 0 24px;
-      box-sizing: border-box;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border-radius: 12px;
-
-      &:hover {
-        background: rgba(1, 47, 166, 0.1);
-      }
-
-      .suggestion-content {
-        flex: 1;
-        white-space: nowrap;
-
-        .suggestion-name {
-          font-size: 20px;
-          text-overflow: ellipsis;
+        .search-suggestions {
+          width: 100%;
+          position: absolute;
+          top: 85%;
+          left: 0;
+          margin-top: 16px;
+          border: 4px solid #cccccc;
+          z-index: 1001;
+          padding: 16px;
+          border-radius: 20px;
+          box-shadow: 0 3px 2px 0 rgba(1, 47, 166, 0.02),
+            0 7px 5px 0 rgba(1, 47, 166, 0.03),
+            0 12px 10px 0 rgba(1, 47, 166, 0.04),
+            0 22px 18px 0 rgba(1, 47, 166, 0.04);
+          box-sizing: border-box;
         }
-      }
-
-      &.selected {
-        background: rgba(1, 47, 166, 0.1);
-        border-radius: 10px;
       }
     }
   }
@@ -632,9 +647,9 @@ $border-color: #f1faff;
 .drop-menu {
   margin-top: 24px;
   display: flex;
-  margin:0 auto;
+  margin: 0 auto;
   justify-content: center;
-  width:80%;
+  width: 80%;
   ul {
     display: flex;
     align-items: center;
@@ -642,7 +657,7 @@ $border-color: #f1faff;
     gap: 8px;
     width: auto;
     height: 48px;
-    flex:1;
+    flex: 1;
     position: relative;
     .menu-title {
       display: flex;
@@ -684,77 +699,94 @@ $border-color: #f1faff;
       }
     }
     .options {
-    position: absolute;
-    top:100%;
-    left: 0;
-    width: 217px;
-    height: auto;
-    padding: 16px 0;
-    box-sizing: border-box;
-    box-shadow: 0 20px 20px 10px rgba(0, 18, 99, 0.2);
-    border-radius: 20px;
-    background: #ffffff;
-    z-index: 10;
-    margin-top:10px;
-
-    .option-item {
-      display: flex;
-      align-items: center;
-      padding: 16px 24px;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 217px;
+      height: auto;
+      padding: 16px 0;
       box-sizing: border-box;
-      gap: 16px;
-      font-size: 20px;
-      color: #666666;
-      transition: all 0.3s ease;
+      box-shadow: 0 20px 20px 10px rgba(0, 18, 99, 0.2);
+      border-radius: 20px;
+      background: #ffffff;
+      z-index: 10;
+      margin-top: 10px;
 
+      .option-item {
+        display: flex;
+        align-items: center;
+        padding: 16px 24px;
+        box-sizing: border-box;
+        gap: 16px;
+        font-size: 20px;
+        color: #666666;
+        transition: all 0.3s ease;
 
-      &:hover {
-        background: rgba(1, 47, 166, 0.1);
-        color: $primary-blue;
-      }
+        &:hover {
+          background: rgba(1, 47, 166, 0.1);
+          color: $primary-blue;
+        }
 
-      .selector {
-        width: 24px;
-        height: 24px;
-        position: relative;
-        border: 1px solid #666666;
-        border-radius: 50%;
-
-        &::after {
-          content: "";
-          position: absolute;
-          width: 16px;
-          height: 16px;
-          background: transparent;
+        .selector {
+          width: 24px;
+          height: 24px;
+          position: relative;
+          border: 1px solid #666666;
           border-radius: 50%;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
+
+          &::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: transparent;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+          }
+        }
+
+        &.selected {
+          color: $primary-blue;
+          background: rgba(1, 47, 166, 0.1);
+
+          .selector {
+            border-color: $primary-blue;
+
+            &::after {
+              background: $primary-blue;
+            }
+          }
         }
       }
 
-      &.selected {
-        color: $primary-blue;
-        background: rgba(1, 47, 166, 0.1);
+      .reset-option {
+        border-bottom: 1px solid #eee;
+        margin-bottom: 8px;
+        padding-bottom: 12px;
+        color: $secondary-blue;
+        display: flex;
+        align-items: center;
+        gap: 8px;
 
-        .selector {
-          border-color: $primary-blue;
+        .reset-icon {
+          font-size: 18px;
+          font-weight: bold;
+        }
 
-          &::after {
-            background: $primary-blue;
-          }
+        &:hover {
+          color: $primary-blue;
         }
       }
     }
   }
-  }
-
-  
 }
 
 .product-area {
-  margin: 87px auto;
-  width:100%;
+  box-sizing: border-box;
+  margin: 87px 0;
+  width: 100%;
   box-sizing: border-box;
   position: relative;
   display: flex;
@@ -762,22 +794,24 @@ $border-color: #f1faff;
   align-items: center;
 
   .sum {
-  font-size: 18px;
-  width: 240px;
-  color: $light-blue;
-  margin-right:auto;
-  margin-left:7%;
+    font-size: 18px;
+    width: 240px;
+    color: $light-blue;
+    margin-right: auto;
+    margin-left: 7%;
+  }
 
-}
-
-.product-list {
-  display: flex;
-  gap: 16px;
-  width: 100%;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 20px; 
-}
+  .product-list {
+    box-sizing: border-box;
+    overflow: hidden;
+    width: 100%;
+    display: flex;
+    padding-left: 6.11%;
+    margin-right: auto;
+    padding-bottom: 20px;
+    gap: 1.11%;
+    flex-wrap: wrap;
+  }
 }
 
 .back-to-top {
@@ -809,5 +843,4 @@ $border-color: #f1faff;
     transform: none;
   }
 }
-
 </style>
