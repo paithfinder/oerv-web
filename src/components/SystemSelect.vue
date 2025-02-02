@@ -372,7 +372,6 @@ const getFileName = (url) => {
         >
           <div class="file-name">{{ getFileName(item.url) }}</div>
           <div class="file-info">
-            <span class="file-size">128GB</span>
             <span
               class="download-btn"
               @click.stop="handleDownload(index)"
