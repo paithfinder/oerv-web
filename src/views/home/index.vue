@@ -115,6 +115,30 @@ const getMenuTitle = computed(() => menuId => {
   return dropMenu.value.find(item => item.id === menuId)?.name;
 });
 
+const getTruncatedTitle = computed(() => (menuId) => {
+  const title = getMenuTitle.value(menuId);
+  const span = document.createElement('span');
+  span.style.font = '500 24px PingFang SC-Regular'; 
+  span.textContent = title;
+  document.body.appendChild(span);
+  const width = span.offsetWidth;
+  document.body.removeChild(span);
+
+  if (width <= 120) return title;
+
+
+  span.textContent = '...';
+
+  let truncatedText = title;
+  while (truncatedText.length > 0) {
+    span.textContent = truncatedText + '...';
+    if (span.offsetWidth <= 120) break;
+    truncatedText = truncatedText.slice(0, -1);
+  }
+  
+  return truncatedText + '...';
+});
+
 const handleSearchInput = e => {
   searchKeyword.value = e.target.value;
   if (!searchKeyword.value) {
@@ -384,7 +408,7 @@ onUnmounted(() => {
             active: showOptions[item.id]
           }"
         >
-          {{ getMenuTitle(item.id) }}
+          <span class="menu-text">{{ getTruncatedTitle(item.id) }}</span>
           <div class="menu-img" :class="{ rotate: showOptions[item.id] }">
             <img src="@/assets/icons/home/Group 5.png" alt="" />
           </div>
@@ -723,8 +747,13 @@ $border-color: #f1faff;
       cursor: pointer;
       font-family: PingFang SC-Regular;
       transition: all 0.3s ease;
-      white-space: nowrap;
-      text-overflow: ellipsis;
+      .menu-text {
+        max-width: 120px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: inline-block;
+      }
 
       &.selected-title {
         color: $primary-blue;
@@ -755,7 +784,8 @@ $border-color: #f1faff;
     .options {
       position: absolute;
       top: 100%;
-      width: 90%;
+      width: 100%;
+      min-width: 235px;
       height: auto;
       padding: 16px 0;
       box-sizing: border-box;
