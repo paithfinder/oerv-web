@@ -270,25 +270,28 @@ console.log(isSearched.value, "我是search");
 
 const productListStyle = ref({ paddingLeft: '0px', paddingRight: '0px' });
 
-    const updatePadding = () => {
-      const viewportWidth = document.body.scrollWidth;
-      console.log(viewportWidth,'我是宽度')
-      const maxItems = Math.floor((viewportWidth + 16) / 256);
-      const paddingValue = (viewportWidth - (maxItems * 240) - (maxItems - 1) * 16) / 2;
-      productListStyle.value.paddingLeft = `${paddingValue}px`;
-      productListStyle.value.paddingRight = `${paddingValue}px`;
-      console.log(maxItems,'我是能容纳的最大容器个数')
+const updatePadding = () => {
+  nextTick(() => {
+    const viewportWidth = document.body.scrollWidth;
+    const maxItems = Math.floor((viewportWidth + 16) / 256);
+    const paddingValue = (viewportWidth - (maxItems * 240) - (maxItems - 1) * 16) / 2;
+    productListStyle.value.paddingLeft = `${paddingValue}px`;
+    productListStyle.value.paddingRight = `${paddingValue}px`;
+  });
+};
 
-    };
+watch(productList, () => {
+  updatePadding();
+}, { immediate: true });
 
-    onMounted(() => {
-      updatePadding();
-      window.addEventListener('resize', updatePadding);
-    });
+onMounted(() => {
+  updatePadding();
+  window.addEventListener('resize', updatePadding);
+});
 
-    onUnmounted(() => {
-      window.removeEventListener('resize', updatePadding);
-    });
+onUnmounted(() => {
+  window.removeEventListener('resize', updatePadding);
+});
 
 </script>
 
