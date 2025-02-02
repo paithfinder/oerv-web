@@ -352,7 +352,7 @@ console.log(isSearched.value, "我是search");
           @click="handleOptionSelect(item.id, option, $event)"
         >
           <span class="selector"></span>
-          <span>{{ option }}</span>
+          <span id="option-name">{{ option }}</span>
         </li>
       </div>
     </ul>
@@ -713,20 +713,17 @@ $border-color: #f1faff;
 
       .option-item {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         padding: 16px 24px;
         box-sizing: border-box;
         gap: 16px;
         font-size: 20px;
         color: #666666;
         transition: all 0.3s ease;
-
-        &:hover {
-          background: rgba(1, 47, 166, 0.1);
-          color: $primary-blue;
-        }
-
+        word-break: break-all;
+        
         .selector {
+          flex-shrink: 0;
           width: 24px;
           height: 24px;
           position: relative;
@@ -744,6 +741,18 @@ $border-color: #f1faff;
             left: 50%;
             transform: translate(-50%, -50%);
           }
+        }
+
+        #option-name {
+          flex: 1;
+          word-wrap: break-word;
+          min-width: 0;
+          line-height: 1.4;
+        }
+
+        &:hover {
+          background: rgba(1, 47, 166, 0.1);
+          color: $primary-blue;
         }
 
         &.selected {
@@ -768,10 +777,11 @@ $border-color: #f1faff;
         display: flex;
         align-items: center;
         gap: 8px;
-
+        
         .reset-icon {
           font-size: 18px;
           font-weight: bold;
+          
         }
 
         &:hover {
