@@ -136,6 +136,16 @@ const handlePackageSelect = option => {
   isPackageDropdownOpen.value = false;
 };
 
+const toggleDropdown = (dropdownType) => {
+  if (dropdownType === 'kernel') {
+    isPackageDropdownOpen.value = false;
+    isDropdownOpen.value = !isDropdownOpen.value;
+  } else {
+    isDropdownOpen.value = false;
+    isPackageDropdownOpen.value = !isPackageDropdownOpen.value;
+  }
+};
+
 const showHelpDialog = ref(false);
 const helpMd = ref(null);
 const parsedMarkdown = ref("");
@@ -218,7 +228,7 @@ const getFileName = (url) => {
             <div class="select-wrapper">
               <div
                 class="custom-select"
-                @click.stop="isDropdownOpen = !isDropdownOpen"
+                @click.stop="toggleDropdown('kernel')"
               >
                 <div class="selected-value">
                   {{
@@ -272,7 +282,7 @@ const getFileName = (url) => {
             <div class="select-wrapper">
               <div
                 class="custom-select"
-                @click.stop="isPackageDropdownOpen = !isPackageDropdownOpen"
+                @click.stop="toggleDropdown('package')"
               >
                 <div class="selected-value">
                   {{
@@ -621,8 +631,7 @@ select:focus {
 
   .dialog-content {
     width: 80%;
-    max-width: 1200px;
-    max-height: 98vh;
+    min-height:95%;
     background: #ffffff;
     border-radius: 20px;
     box-shadow: 0 4.16px 8px rgba(0, 0, 0, 0.15);
@@ -630,7 +639,8 @@ select:focus {
     animation: dialogFadeIn 0.3s ease;
     padding: 0 48px 24px 48px;
     overflow-y: auto;
-    
+    display: flex;
+    flex-direction: column;
 
     .selectedGroup {
       display: flex;
@@ -689,7 +699,7 @@ select:focus {
 
     .upload-area {
       width: 100%;
-      height: 350px;
+      flex:1;
       background: #f5f5f5;
       margin-top: 32px;
       display: flex;
@@ -771,6 +781,7 @@ select:focus {
   z-index: 1000;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   padding: 6px;
+  box-sizing: border-box;
 }
 
 .dropdown-item {
@@ -809,7 +820,7 @@ select:focus {
 
 #file-list {
   margin-top: 16px;
-  max-height: 224px;
+  max-height: 100px;
   overflow-y: auto;
   padding-right: 16px;
   a{
