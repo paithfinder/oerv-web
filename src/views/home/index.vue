@@ -352,7 +352,7 @@ console.log(isSearched.value, "我是search");
           @click="handleOptionSelect(item.id, option, $event)"
         >
           <span class="selector"></span>
-          {{ option }}
+          <span>{{ option }}</span>
         </li>
       </div>
     </ul>
@@ -701,7 +701,6 @@ $border-color: #f1faff;
     .options {
       position: absolute;
       top: 100%;
-      left: 0;
       width: 217px;
       height: auto;
       padding: 16px 0;
@@ -806,7 +805,7 @@ $border-color: #f1faff;
     overflow: hidden;
     width: 100%;
     display: flex;
-    padding-left: 6.11%;
+    padding:0  6.11%;
     margin-right: auto;
     padding-bottom: 20px;
     gap: 1.11%;

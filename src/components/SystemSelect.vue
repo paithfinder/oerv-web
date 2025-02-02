@@ -631,7 +631,7 @@ select:focus {
 
   .dialog-content {
     width: 80%;
-    min-height:95%;
+    max-height: 95%;
     background: #ffffff;
     border-radius: 20px;
     box-shadow: 0 4.16px 8px rgba(0, 0, 0, 0.15);
@@ -639,8 +639,25 @@ select:focus {
     animation: dialogFadeIn 0.3s ease;
     padding: 0 48px 24px 48px;
     overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+    scrollbar-width: thin;
+    scrollbar-color: #E5E5E5 transparent;
+    
+    &::-webkit-scrollbar {
+      width: 8px;
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+      margin: 20px 0;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #E5E5E5;
+      border-radius: 4px;
+      border: 2px solid #ffffff;
+      background-clip: padding-box;
+    }
 
     .selectedGroup {
       display: flex;
@@ -699,7 +716,7 @@ select:focus {
 
     .upload-area {
       width: 100%;
-      flex:1;
+      min-height:50vh;
       background: #f5f5f5;
       margin-top: 32px;
       display: flex;
@@ -811,12 +828,13 @@ select:focus {
 }
 
 .markdown-body {
-  font-size: 16px !important;
+  font-size: 15px !important;
   padding: 20px 0 0 0;
   width: 100%;
   height: 100%;
   box-sizing: border-box;
 }
+
 
 #file-list {
   margin-top: 16px;
@@ -910,6 +928,7 @@ select:focus {
   h6 {
     margin-top: 32px;
     margin-bottom: 16px;
+    font-size: 16px;
   }
 
   p {
