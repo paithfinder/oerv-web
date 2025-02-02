@@ -273,7 +273,13 @@ const productListStyle = ref({ paddingLeft: '0px', paddingRight: '0px' });
 const updatePadding = () => {
   nextTick(() => {
     const viewportWidth = document.body.scrollWidth;
-    const maxItems = Math.floor((viewportWidth + 16) / 256);
+    let maxItems = Math.floor((viewportWidth + 16) / 256);
+    
+    // 如果产品数量小于最大可容纳数量,则使用产品数量作为maxItems
+    if (productList.value.length < maxItems) {
+      maxItems = productList.value.length;
+    }
+    
     const paddingValue = (viewportWidth - (maxItems * 240) - (maxItems - 1) * 16) / 2;
     productListStyle.value.paddingLeft = `${paddingValue}px`;
     productListStyle.value.paddingRight = `${paddingValue}px`;
