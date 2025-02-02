@@ -208,13 +208,63 @@ const handleResetOption = (menuId, event) => {
   showOptions.value[menuId] = false;
 };
 
+const productListStyle = ref({ paddingLeft: "0px", paddingRight: "0px" });
+
+const updatePadding = () => {
+  console.log('我被调用啊啦啦啦！！！')
+
+  if (!productList.value.length) return;
+  
+  nextTick(async () => {
+
+    const viewportWidth = document.body.scrollWidth - 119 * 2;
+    let maxItems = Math.floor((viewportWidth + 16) / 256);
+
+
+    const currentListLength = filteredProductList.value.length;
+    
+    if (currentListLength < maxItems) {
+      maxItems = currentListLength || 1; 
+    }
+
+    const paddingValue =
+      (viewportWidth - maxItems * 240 - (maxItems - 1) * 16) / 2 + 119;
+    productListStyle.value.paddingLeft = `${paddingValue}px`;
+    productListStyle.value.paddingRight = `${paddingValue}px`;
+  });
+};
+
+
+watch(selectedOptions, () => {
+  nextTick(() => {
+    updatePadding();
+  });
+}, { deep: true });
+
+watch(searchQuery, () => {
+  nextTick(() => {
+    updatePadding();
+  });
+});
+
+watch(filteredProductList, () => {
+  nextTick(() => {
+    updatePadding();
+  });
+}, { deep: true });
+
 onMounted(async () => {
+  updatePadding()
+  window.addEventListener("resize", updatePadding);
   try {
     const response = await getProductList();
     productList.value = response.data;
+    await nextTick();
+    updatePadding(); 
   } catch (error) {
     console.error("获取产品列表失败:", error);
   }
+
 
   document.addEventListener("click", closeAllOptions);
   document.addEventListener("click", closeSearchSuggestions);
@@ -268,37 +318,9 @@ watch(isSearched, (oldValue, newValue) => {
 });
 console.log(isSearched.value, "我是search");
 
-const productListStyle = ref({ paddingLeft: '0px', paddingRight: '0px' });
-
-const updatePadding = () => {
-  nextTick(() => {
-    const viewportWidth = document.body.scrollWidth;
-    let maxItems = Math.floor((viewportWidth + 16) / 256);
-    
-    // 如果产品数量小于最大可容纳数量,则使用产品数量作为maxItems
-    if (productList.value.length < maxItems) {
-      maxItems = productList.value.length;
-    }
-    
-    const paddingValue = (viewportWidth - (maxItems * 240) - (maxItems - 1) * 16) / 2;
-    productListStyle.value.paddingLeft = `${paddingValue}px`;
-    productListStyle.value.paddingRight = `${paddingValue}px`;
-  });
-};
-
-watch(productList, () => {
-  updatePadding();
-}, { immediate: true });
-
-onMounted(() => {
-  updatePadding();
-  window.addEventListener('resize', updatePadding);
-});
-
 onUnmounted(() => {
-  window.removeEventListener('resize', updatePadding);
+  window.removeEventListener("resize", updatePadding);
 });
-
 </script>
 
 <template>
@@ -753,7 +775,7 @@ $border-color: #f1faff;
         color: #666666;
         transition: all 0.3s ease;
         word-break: break-all;
-        
+
         .selector {
           flex-shrink: 0;
           width: 24px;
@@ -809,11 +831,10 @@ $border-color: #f1faff;
         display: flex;
         align-items: center;
         gap: 8px;
-        
+
         .reset-icon {
           font-size: 18px;
           font-weight: bold;
-          
         }
 
         &:hover {
@@ -847,8 +868,8 @@ $border-color: #f1faff;
     overflow: hidden;
     width: 100%;
     display: flex;
-    padding-left: v-bind('productListStyle.paddingLeft');
-    padding-right: v-bind('productListStyle.paddingRight');
+    padding-left: v-bind("productListStyle.paddingLeft");
+    padding-right: v-bind("productListStyle.paddingRight");
 
     padding-bottom: 20px;
     gap: 16px;
