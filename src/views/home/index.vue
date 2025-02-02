@@ -1,6 +1,6 @@
 <script setup>
 import ProductItem from "@/components/ProductItem.vue";
-import { ref, computed, onMounted, nextTick, watch } from "vue";
+import { ref, computed, onMounted, nextTick, watch, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { getProductList } from "@/api/get-json";
 
@@ -267,6 +267,29 @@ watch(isSearched, (oldValue, newValue) => {
   console.log(oldValue, newValue);
 });
 console.log(isSearched.value, "我是search");
+
+const productListStyle = ref({ paddingLeft: '0px', paddingRight: '0px' });
+
+    const updatePadding = () => {
+      const viewportWidth = document.body.scrollWidth;
+      console.log(viewportWidth,'我是宽度')
+      const maxItems = Math.floor((viewportWidth + 16) / 256);
+      const paddingValue = (viewportWidth - (maxItems * 240) - (maxItems - 1) * 16) / 2;
+      productListStyle.value.paddingLeft = `${paddingValue}px`;
+      productListStyle.value.paddingRight = `${paddingValue}px`;
+      console.log(maxItems,'我是能容纳的最大容器个数')
+
+    };
+
+    onMounted(() => {
+      updatePadding();
+      window.addEventListener('resize', updatePadding);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', updatePadding);
+    });
+
 </script>
 
 <template>
@@ -701,7 +724,7 @@ $border-color: #f1faff;
     .options {
       position: absolute;
       top: 100%;
-      width: 217px;
+      width: 90%;
       height: auto;
       padding: 16px 0;
       box-sizing: border-box;
@@ -815,10 +838,11 @@ $border-color: #f1faff;
     overflow: hidden;
     width: 100%;
     display: flex;
-    padding:0  6.11%;
-    margin-right: auto;
+    padding-left: v-bind('productListStyle.paddingLeft');
+    padding-right: v-bind('productListStyle.paddingRight');
+
     padding-bottom: 20px;
-    gap: 1.11%;
+    gap: 16px;
     flex-wrap: wrap;
   }
 }
