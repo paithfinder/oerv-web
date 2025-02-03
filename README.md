@@ -40,7 +40,8 @@ npm run build
 orev-web/
 ├── public/          # 数据资源
 │   ├── boards.json  # 首页数据
-|   |—— resources     # md文件
+|   |—— resources     # 图片文件
+|   |—— docs          # md文件
 │   └── products/    # 板卡子页面数据  
 ├── src/
 │   ├── assets/      # 图片资源
@@ -51,7 +52,6 @@ orev-web/
 │   └── router/      # 路由配置
 |—— package.json     # 项目配置文件
 |—— index.html       # HTML 入口文件
-|—— flexible.js      # 移动端自适应方案:flexible + rem
 |—— package.json     # 依赖配置
 |—— README.md        # 依赖配置
 |__ vite.config.js   # Vite 配置文件
