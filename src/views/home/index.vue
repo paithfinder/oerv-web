@@ -247,9 +247,11 @@ watch(viewportWidth, newValue => {
   console.log(newValue, "viewportWidth变化了");
   changeIsDummy(newValue)
 });
+watch(filteredProductList,newValue=>{
+  console.log(newValue.length,'我是筛选数目')
+  changeIsDummy(viewportWidth.value)
+})
 const changeIsDummy=(value)=>{
-  console.log(filteredProductList.value.length,'我被调用了嘻嘻嘻嘻dummy')
-  
   if (Math.floor((value + 16) / 256) > filteredProductList.value.length) {
     isdummy.value = false;
     let elements = document.querySelectorAll(".dummy-wrapper");
@@ -361,7 +363,7 @@ onMounted(async () => {
             src="@/assets/icons/home/Group 2.png"
             alt=""
           />
-          <button v-else class="search-text" type="button">搜 索</button>
+          <button v-else class="search-text" type="button" >搜 索</button>
         </div>
 
         <div
