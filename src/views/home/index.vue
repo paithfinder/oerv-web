@@ -1,6 +1,6 @@
 <script setup>
 import ProductItem from "@/components/ProductItem.vue";
-import { ref, computed, onMounted, nextTick, watch, onUnmounted } from "vue";
+import { ref, computed, onMounted, nextTick, onUnmounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { getProductList } from "@/api/get-json";
 
@@ -115,10 +115,10 @@ const getMenuTitle = computed(() => menuId => {
   return dropMenu.value.find(item => item.id === menuId)?.name;
 });
 
-const getTruncatedTitle = computed(() => (menuId) => {
+const getTruncatedTitle = computed(() => menuId => {
   const title = getMenuTitle.value(menuId);
-  const span = document.createElement('span');
-  span.style.font = '500 24px PingFang SC-Regular'; 
+  const span = document.createElement("span");
+  span.style.font = "500 24px PingFang SC-Regular";
   span.textContent = title;
   document.body.appendChild(span);
   const width = span.offsetWidth;
@@ -126,17 +126,16 @@ const getTruncatedTitle = computed(() => (menuId) => {
 
   if (width <= 120) return title;
 
-
-  span.textContent = '...';
+  span.textContent = "...";
 
   let truncatedText = title;
   while (truncatedText.length > 0) {
-    span.textContent = truncatedText + '...';
+    span.textContent = truncatedText + "...";
     if (span.offsetWidth <= 120) break;
     truncatedText = truncatedText.slice(0, -1);
   }
-  
-  return truncatedText + '...';
+
+  return truncatedText + "...";
 });
 
 const handleSearchInput = e => {
@@ -232,63 +231,44 @@ const handleResetOption = (menuId, event) => {
   showOptions.value[menuId] = false;
 };
 
-const productListStyle = ref({ paddingLeft: "0px", paddingRight: "0px" });
-
-const updatePadding = () => {
-  console.log('我被调用啊啦啦啦！！！')
-
-  if (!productList.value.length) return;
-  
-  nextTick(async () => {
-
-    const viewportWidth = document.body.scrollWidth - 119 * 2;
-    let maxItems = Math.floor((viewportWidth + 16) / 256);
-
-
-    const currentListLength = filteredProductList.value.length;
-    
-    if (currentListLength < maxItems) {
-      maxItems = currentListLength || 1; 
-    }
-
-    const paddingValue =
-      (viewportWidth - maxItems * 240 - (maxItems - 1) * 16) / 2 + 119;
-    productListStyle.value.paddingLeft = `${paddingValue}px`;
-    productListStyle.value.paddingRight = `${paddingValue}px`;
-  });
+const viewportWidth = ref(0);
+const isdummy = ref(false);
+const changeViewportWidth = () => {
+  viewportWidth.value = document.body.scrollWidth;
 };
 
+onMounted(() => {
+  changeViewportWidth();
 
-watch(selectedOptions, () => {
-  nextTick(() => {
-    updatePadding();
-  });
-}, { deep: true });
-
-watch(searchQuery, () => {
-  nextTick(() => {
-    updatePadding();
-  });
+  window.addEventListener("resize", changeViewportWidth);
 });
 
-watch(filteredProductList, () => {
-  nextTick(() => {
-    updatePadding();
-  });
-}, { deep: true });
+onUnmounted(() => {
+  window.removeEventListener("resize", changeViewportWidth);
+});
+watch(viewportWidth, newValue => {
+  console.log(newValue, "viewportWidth变化了");
+  if (Math.floor((newValue + 16) / 256) > filteredProductList.value.length) {
+    isdummy.value = false;
+    let elements = document.querySelectorAll(".dummy-wrapper");
 
+    elements.forEach(function (element) {
+      element.style.display = "none";
+    });
+    console.log(isdummy.value, "我是dummy");
+  } else {
+    isdummy.value = true;
+    console.log(isdummy.value, "我是dummy");
+  }
+});
 onMounted(async () => {
-  updatePadding()
-  window.addEventListener("resize", updatePadding);
   try {
     const response = await getProductList();
     productList.value = response.data;
     await nextTick();
-    updatePadding(); 
   } catch (error) {
     console.error("获取产品列表失败:", error);
   }
-
 
   document.addEventListener("click", closeAllOptions);
   document.addEventListener("click", closeSearchSuggestions);
@@ -336,14 +316,6 @@ onMounted(async () => {
     isSearched.value = true;
     handleSearch();
   }
-});
-watch(isSearched, (oldValue, newValue) => {
-  console.log(oldValue, newValue);
-});
-console.log(isSearched.value, "我是search");
-
-onUnmounted(() => {
-  window.removeEventListener("resize", updatePadding);
 });
 </script>
 
@@ -452,6 +424,9 @@ onUnmounted(() => {
         :key="item.name"
         :info="item"
       />
+      <div v-for="item in 14" :key="item" class="dummy-wrapper">
+        <div id="product-dummy" v-if="isdummy"></div>
+      </div>
     </div>
   </div>
   <div class="back-to-top" v-show="showBackToTop" @click="scrollToTop">
@@ -785,7 +760,7 @@ $border-color: #f1faff;
       position: absolute;
       top: 100%;
       width: 100%;
-      min-width: 235px;
+      min-width: 240px;
       height: auto;
       padding: 16px 0;
       box-sizing: border-box;
@@ -898,12 +873,19 @@ $border-color: #f1faff;
     overflow: hidden;
     width: 100%;
     display: flex;
-    padding-left: v-bind("productListStyle.paddingLeft");
-    padding-right: v-bind("productListStyle.paddingRight");
-
+    justify-content: center;
     padding-bottom: 20px;
     gap: 16px;
     flex-wrap: wrap;
+    padding: 0 119px;
+    .dummy-wrapper {
+      #product-dummy {
+        width: 240px;
+        height: 1px;
+        background-color: #012fa6;
+        display: block;
+      }
+    }
   }
 }
 

@@ -630,7 +630,7 @@ select:focus {
   z-index: 1000;
 
   .dialog-content {
-    width: 80%;
+    width: 60em;
     max-height: 95%;
     background: #ffffff;
     border-radius: 20px;
@@ -947,5 +947,6 @@ select:focus {
     border-radius: 6px;
     overflow-x: auto;
   }
+ 
 }
 </style>
