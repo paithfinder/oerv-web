@@ -22,7 +22,7 @@ const showBackToTop = ref(false);
 const productList = ref([]);
 
 const nameMapping = {
-  soc: "Soc型号",
+  soc: "SoC型号",
   isa: "指令集特性",
   kernel: "内核版本",
   userspace: "用户态空间",
@@ -237,8 +237,6 @@ const changeViewportWidth = () => {
   viewportWidth.value = document.body.scrollWidth;
   changeIsDummy(viewportWidth.value)
 };
-
-
 
 onUnmounted(() => {
   window.removeEventListener("resize", changeViewportWidth);
