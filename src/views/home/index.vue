@@ -251,7 +251,6 @@ watch(viewportWidth, newValue => {
   if (Math.floor((newValue + 16) / 256) > filteredProductList.value.length) {
     isdummy.value = false;
     let elements = document.querySelectorAll(".dummy-wrapper");
-
     elements.forEach(function (element) {
       element.style.display = "none";
     });
@@ -259,6 +258,10 @@ watch(viewportWidth, newValue => {
   } else {
     isdummy.value = true;
     console.log(isdummy.value, "我是dummy");
+    let elements = document.querySelectorAll(".dummy-wrapper");
+    elements.forEach(function (element) {
+      element.style.display = "block";
+    });
   }
 });
 onMounted(async () => {
@@ -882,7 +885,7 @@ $border-color: #f1faff;
       #product-dummy {
         width: 240px;
         height: 1px;
-        background-color: #012fa6;
+        background-color: transparent;
         display: block;
       }
     }

@@ -30,9 +30,11 @@ const pageIndicator = computed(() => {
 });
 
 const handlePrevClick = () => {
+
   const newIndex = currentIndex.value - 1;
   if (newIndex >= 0) {
     emit("update-index", newIndex);
+
   }
 };
 
@@ -40,8 +42,15 @@ const handleNextClick = () => {
   const newIndex = currentIndex.value + 1;
   if (newIndex < props.itemList.length) {
     emit("update-index", newIndex);
+
   }
 };
+// 监听props.item的变化
+watch(() => props.item, (newVal) => {
+  if (newVal) {
+    loadDocs();
+  }
+}, { deep: true });
 
 const selectedItem = ref(null);
 const currentFiles = computed(() => {
@@ -151,6 +160,7 @@ const helpMd = ref(null);
 const parsedMarkdown = ref("");
 
 const handleHelpClick = () => {
+
   showHelpDialog.value = true;
 };
 
@@ -160,6 +170,7 @@ const handleCloseDialog = () => {
 
 const loadDocs = async () => {
   const docs = props.item.imagesuites[0].docs;
+  console.log(props.item.imagesuites[0].docs,'我是传递过来的item')
   if (docs && docs.length > 0) {
     try {
       const docPath = `/${docs[0]}`;
@@ -183,6 +194,8 @@ const loadDocs = async () => {
       helpMd.value = null;
       parsedMarkdown.value = "";
     }
+  }else{
+    helpMd.value = null;
   }
 };
 
