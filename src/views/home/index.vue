@@ -235,20 +235,22 @@ const viewportWidth = ref(0);
 const isdummy = ref(false);
 const changeViewportWidth = () => {
   viewportWidth.value = document.body.scrollWidth;
+  changeIsDummy(viewportWidth.value)
 };
 
-onMounted(() => {
-  changeViewportWidth();
 
-  window.addEventListener("resize", changeViewportWidth);
-});
 
 onUnmounted(() => {
   window.removeEventListener("resize", changeViewportWidth);
 });
 watch(viewportWidth, newValue => {
   console.log(newValue, "viewportWidth变化了");
-  if (Math.floor((newValue + 16) / 256) > filteredProductList.value.length) {
+  changeIsDummy(newValue)
+});
+const changeIsDummy=(value)=>{
+  console.log(filteredProductList.value.length,'我被调用了嘻嘻嘻嘻dummy')
+  
+  if (Math.floor((value + 16) / 256) > filteredProductList.value.length) {
     isdummy.value = false;
     let elements = document.querySelectorAll(".dummy-wrapper");
     elements.forEach(function (element) {
@@ -263,8 +265,8 @@ watch(viewportWidth, newValue => {
       element.style.display = "block";
     });
   }
-});
-onMounted(async () => {
+}
+const fetchProductList=async()=>{
   try {
     const response = await getProductList();
     productList.value = response.data;
@@ -272,6 +274,13 @@ onMounted(async () => {
   } catch (error) {
     console.error("获取产品列表失败:", error);
   }
+
+}
+onMounted(async () => {
+  await fetchProductList();
+  changeViewportWidth();
+  window.addEventListener("resize", changeViewportWidth);
+  console.log(document.body.scrollWidth,'我是初始的body的宽度嘻嘻')
 
   document.addEventListener("click", closeAllOptions);
   document.addEventListener("click", closeSearchSuggestions);
