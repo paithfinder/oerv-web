@@ -146,10 +146,37 @@ const closeAllOptions = () => {
   showOptions.value = {};
 };
 
+const randomPlaceholder = ref('');
+const lastPlaceholder = ref('');
+const placeholderTimer = ref(null);
+
+const getRandomProduct = () => {
+  if (!productList.value || productList.value.length === 0) {
+    return '';
+  }
+  
+  let newPlaceholder;
+  do {
+    const randomIndex = Math.floor(Math.random() * productList.value.length);
+    newPlaceholder = productList.value[randomIndex].name;
+  } while (newPlaceholder === lastPlaceholder.value && productList.value.length > 1);
+  
+  lastPlaceholder.value = newPlaceholder;
+  return newPlaceholder;
+};
+
+const startRandomPlaceholder = () => {
+  randomPlaceholder.value = getRandomProduct();
+  placeholderTimer.value = setInterval(() => {
+    randomPlaceholder.value = getRandomProduct();
+  }, 5000);
+};
+
 onMounted(async () => {
   try {
     const response = await getProductList("../../../public");
     productList.value = response.data;
+    startRandomPlaceholder();
   } catch (error) {
     console.error("获取产品列表失败:", error);
   }
@@ -161,6 +188,9 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  if (placeholderTimer.value) {
+    clearInterval(placeholderTimer.value);
+  }
   document.removeEventListener("click", closeAllOptions);
   document.removeEventListener("click", closeSearchSuggestions);
 });
@@ -206,7 +236,7 @@ watch(
           class="search-input"
           v-model="searchKeyword"
           @input="handleSearchInput"
-          placeholder="说点什么吧"
+          :placeholder="randomPlaceholder"
           @blur="handleInputBlur"
           ref="searchInputRef"
           v-show="isSearched"
@@ -483,7 +513,7 @@ $border-color: #f1faff;
 
           &::placeholder {
             color: $light-blue;
-            content: "说点什么吧";
+            content: "";
           }
 
           &:focus {

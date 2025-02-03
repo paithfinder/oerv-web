@@ -20,6 +20,9 @@ const isSticky = ref(false);
 const showSearchInput = ref(false);
 const showBackToTop = ref(false);
 const productList = ref([]);
+const randomPlaceholder = ref('');
+const placeholderTimer = ref(null);
+const lastPlaceholder = ref('');
 
 const nameMapping = {
   soc: "SoC型号",
@@ -169,7 +172,7 @@ const handleSearchIconClick = () => {
       const searchInput = document.querySelector("#search");
       searchInput.style.backgroundColor = "#f0f0f0";
       searchInputRef.value.focus();
-      searchInputRef.value.placeholder = "说点什么吧";
+      searchInputRef.value.placeholder = randomPlaceholder.value;
     });
   }
 };
@@ -240,6 +243,9 @@ const changeViewportWidth = () => {
 
 onUnmounted(() => {
   window.removeEventListener("resize", changeViewportWidth);
+  if (placeholderTimer.value) {
+    clearInterval(placeholderTimer.value);
+  }
 });
 watch(viewportWidth, newValue => {
   console.log(newValue, "viewportWidth变化了");
@@ -276,12 +282,34 @@ const fetchProductList=async()=>{
   }
 
 }
+
+const getRandomProduct = () => {
+  if (!productList.value || productList.value.length === 0) {
+    return '';
+  }
+  
+  let newPlaceholder;
+  do {
+    const randomIndex = Math.floor(Math.random() * productList.value.length);
+    newPlaceholder = productList.value[randomIndex].name;
+  } while (newPlaceholder === lastPlaceholder.value && productList.value.length > 1);
+  
+  lastPlaceholder.value = newPlaceholder;
+  return newPlaceholder;
+};
+
+const startRandomPlaceholder = () => {
+  randomPlaceholder.value = getRandomProduct();
+  placeholderTimer.value = setInterval(() => {
+    randomPlaceholder.value = getRandomProduct();
+  }, 5000);
+};
+
 onMounted(async () => {
   await fetchProductList();
+  startRandomPlaceholder();
   changeViewportWidth();
   window.addEventListener("resize", changeViewportWidth);
-  console.log(document.body.scrollWidth,'我是初始的body的宽度嘻嘻')
-
   document.addEventListener("click", closeAllOptions);
   document.addEventListener("click", closeSearchSuggestions);
   const searchContainer = document.querySelector(".search-container");
@@ -347,7 +375,7 @@ onMounted(async () => {
           class="search-input"
           v-model="searchKeyword"
           @input="handleSearchInput"
-          :placeholder="isSticky ? '' : '一款叫627453的超级棒产品'"
+          :placeholder="randomPlaceholder"
           @blur="handleInputBlur"
           ref="searchInputRef"
           v-show="!isSticky || (isSticky && showSearchInput)"
@@ -668,7 +696,7 @@ $border-color: #f1faff;
 
             &::placeholder {
               color: $light-blue;
-              content: "说点什么吧";
+              content: v-bind(randomPlaceholder);
             }
 
             &:focus {
