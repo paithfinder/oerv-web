@@ -25,7 +25,7 @@ const nameMapping = {
   soc: "SoC型号",
   isa: "指令集特性",
   kernel: "内核版本",
-  userspace: "用户态空间",
+  userspace: "软件包场景",
   status: "支持状态"
 };
 

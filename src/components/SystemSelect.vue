@@ -290,7 +290,7 @@ const getFileName = (url) => {
         </div>
 
         <div class="select-row">
-          <div class="select-label">用户态包组:</div>
+          <div class="select-label">软件包场景:</div>
           <div class="select-box">
             <div class="select-wrapper">
               <div
@@ -381,7 +381,7 @@ const getFileName = (url) => {
           <div class="value">{{ selectedKernel }}</div>
         </div>
         <div class="package">
-          <div class="label">用户态包组：</div>
+          <div class="label">软件包场景：</div>
           <div class="value">{{ selectedPackage }}</div>
         </div>
       </div>
