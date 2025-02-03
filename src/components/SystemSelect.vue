@@ -1,7 +1,27 @@
 <script setup>
 import "github-markdown-css";
-import { marked } from "marked";
-import { ref, computed, defineComponent, onMounted, watch, onUnmounted } from "vue";
+import { Marked } from "marked";
+import { markedHighlight } from "marked-highlight"
+import hljs from 'highlight.js'
+import 'highlight.js/styles/atom-one-dark.css' 
+const marked=new Marked(
+  markedHighlight({
+    langPrefix: 'hljs language-',
+    highlight(code, lang) {
+    const language = hljs.getLanguage(lang) ? lang : 'shell'
+    return hljs.highlight(code, { language }).value
+  }
+  })
+)
+
+import {
+  ref,
+  computed,
+  defineComponent,
+  onMounted,
+  watch,
+  onUnmounted
+} from "vue";
 import DesriName from "@/components/DesriName.vue";
 
 const props = defineProps({
@@ -30,11 +50,9 @@ const pageIndicator = computed(() => {
 });
 
 const handlePrevClick = () => {
-
   const newIndex = currentIndex.value - 1;
   if (newIndex >= 0) {
     emit("update-index", newIndex);
-
   }
 };
 
@@ -42,15 +60,18 @@ const handleNextClick = () => {
   const newIndex = currentIndex.value + 1;
   if (newIndex < props.itemList.length) {
     emit("update-index", newIndex);
-
   }
 };
 // 监听props.item的变化
-watch(() => props.item, (newVal) => {
-  if (newVal) {
-    loadDocs();
-  }
-}, { deep: true });
+watch(
+  () => props.item,
+  newVal => {
+    if (newVal) {
+      loadDocs();
+    }
+  },
+  { deep: true }
+);
 
 const selectedItem = ref(null);
 const currentFiles = computed(() => {
@@ -145,8 +166,8 @@ const handlePackageSelect = option => {
   isPackageDropdownOpen.value = false;
 };
 
-const toggleDropdown = (dropdownType) => {
-  if (dropdownType === 'kernel') {
+const toggleDropdown = dropdownType => {
+  if (dropdownType === "kernel") {
     isPackageDropdownOpen.value = false;
     isDropdownOpen.value = !isDropdownOpen.value;
   } else {
@@ -160,7 +181,6 @@ const helpMd = ref(null);
 const parsedMarkdown = ref("");
 
 const handleHelpClick = () => {
-
   showHelpDialog.value = true;
 };
 
@@ -170,13 +190,13 @@ const handleCloseDialog = () => {
 
 const loadDocs = async () => {
   const docs = props.item.imagesuites[0].docs;
-  console.log(props.item.imagesuites[0].docs,'我是传递过来的item')
+ 
   if (docs && docs.length > 0) {
     try {
       const docPath = `/${docs[0]}`;
       const response = await fetch(docPath);
       if (!response.ok) {
-        throw new Error('md文档获取失败')
+        throw new Error("md文档获取失败");
       }
       let markdown = await response.text();
 
@@ -187,14 +207,14 @@ const loadDocs = async () => {
           return `![${alt}](${basePath}/${imgPath})`;
         }
       );
-      parsedMarkdown.value = marked(markdown);
+ parsedMarkdown.value = marked.parse(markdown);
       helpMd.value = true;
     } catch (error) {
       console.error("加载文档失败：", error);
       helpMd.value = null;
       parsedMarkdown.value = "";
     }
-  }else{
+  } else {
     helpMd.value = null;
   }
 };
@@ -203,9 +223,8 @@ watch(currentIndex, () => {
   loadDocs();
 });
 
-
-const closeDropdowns = (e) => {
-  if (!e.target.closest('.select-wrapper')) {
+const closeDropdowns = e => {
+  if (!e.target.closest(".select-wrapper")) {
     isDropdownOpen.value = false;
     isPackageDropdownOpen.value = false;
   }
@@ -213,18 +232,18 @@ const closeDropdowns = (e) => {
 
 onMounted(() => {
   loadDocs();
-  document.addEventListener('click', closeDropdowns);
+  document.addEventListener("click", closeDropdowns);
 });
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeDropdowns);
+  document.removeEventListener("click", closeDropdowns);
 });
 
 defineComponent({
   helpMd
 });
-const getFileName = (url) => {
-  return url.split('/').pop();
+const getFileName = url => {
+  return url.split("/").pop();
 };
 </script>
 
@@ -239,10 +258,7 @@ const getFileName = (url) => {
           <div class="select-label">内核版本:</div>
           <div class="select-box">
             <div class="select-wrapper">
-              <div
-                class="custom-select"
-                @click.stop="toggleDropdown('kernel')"
-              >
+              <div class="custom-select" @click.stop="toggleDropdown('kernel')">
                 <div class="selected-value">
                   {{
                     kernelOptions.find(opt => opt.value === selectedKernel)
@@ -344,10 +360,7 @@ const getFileName = (url) => {
           <div class="file-name">{{ getFileName(item.url) }}</div>
           <div class="file-info">
             <span class="file-size"></span>
-            <span
-              class="download-btn"
-              @click.stop="handleDownload(index)"
-            >
+            <span class="download-btn" @click.stop="handleDownload(index)">
               点击下载
             </span>
           </div>
@@ -395,10 +408,7 @@ const getFileName = (url) => {
         >
           <div class="file-name">{{ getFileName(item.url) }}</div>
           <div class="file-info">
-            <span
-              class="download-btn"
-              @click.stop="handleDownload(index)"
-            >
+            <span class="download-btn" @click.stop="handleDownload(index)">
               点击下载
             </span>
           </div>
@@ -653,8 +663,8 @@ select:focus {
     padding: 0 48px 24px 48px;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: #E5E5E5 transparent;
-    
+    scrollbar-color: #e5e5e5 transparent;
+
     &::-webkit-scrollbar {
       width: 8px;
       background: transparent;
@@ -666,7 +676,7 @@ select:focus {
     }
 
     &::-webkit-scrollbar-thumb {
-      background: #E5E5E5;
+      background: #e5e5e5;
       border-radius: 4px;
       border: 2px solid #ffffff;
       background-clip: padding-box;
@@ -729,7 +739,7 @@ select:focus {
 
     .upload-area {
       width: 100%;
-      min-height:50vh;
+      min-height: 50vh;
       background: #f5f5f5;
       margin-top: 32px;
       display: flex;
@@ -848,13 +858,12 @@ select:focus {
   box-sizing: border-box;
 }
 
-
 #file-list {
   margin-top: 16px;
   max-height: 100px;
   overflow-y: auto;
   padding-right: 16px;
-  a{
+  a {
     text-decoration: none;
   }
   &::-webkit-scrollbar {
@@ -960,6 +969,8 @@ select:focus {
     border-radius: 6px;
     overflow-x: auto;
   }
- 
+  ul{
+    list-style-type: disc;
+  }
 }
 </style>
