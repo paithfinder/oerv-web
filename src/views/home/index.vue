@@ -772,7 +772,7 @@ $border-color: #f1faff;
       position: absolute;
       top: 100%;
       width: 100%;
-      min-width: 240px;
+      width: 240px;
       height: auto;
       padding: 16px 0;
       box-sizing: border-box;
