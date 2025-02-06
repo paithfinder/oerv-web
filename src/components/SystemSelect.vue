@@ -62,7 +62,6 @@ const handleNextClick = () => {
     emit("update-index", newIndex);
   }
 };
-// 监听props.item的变化
 watch(
   () => props.item,
   newVal => {

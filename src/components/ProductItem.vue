@@ -51,6 +51,7 @@ const productImage = computed(() => {
   transform: translateY(0);
   cursor: pointer;
   margin-top: 20px;
+  box-sizing: border-box;
   &:hover {
     box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.15);
     transform: translateY(-8px);

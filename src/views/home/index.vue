@@ -918,6 +918,7 @@ $border-color: #f1faff;
     gap: 16px;
     flex-wrap: wrap;
     padding: 0 119px;
+    min-height: 330px;
     .dummy-wrapper {
       #product-dummy {
         width: 240px;
