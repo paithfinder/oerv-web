@@ -97,7 +97,7 @@
               "branch": "6.6",
               "version": "6.6.0-72.0.0.76.oe2403sp1"
             },
-            "userspace": "Xfce4",
+            "userspace": "xfce4",
             "isa": {
               "profile": "RVA20",
               "extensions": []
@@ -139,9 +139,9 @@
             "kernel": {
               "type": "RVCK",
               "branch": "6.6",
-              "version": "6.6"
+              "version": "6.6.0-27.0.0.31.oe2403"
             },
-            "userspace": "Xfce4",
+            "userspace": "xfce4",
             "isa": {
               "profile": "RVA20",
               "extensions": []

@@ -11,7 +11,7 @@
       "RVCK-6.6"
     ],
     "userspace": [
-      "Xfce4"
+      "xfce4"
     ],
     "uri": "products/milkv/pioneer.json",
     "status": "SUPPORTED"
@@ -28,7 +28,7 @@
       "RVCK-6.6"
     ],
     "userspace": [
-      "Xfce4"
+      "xfce4"
     ],
     "uri": "products/qemu/system.json",
     "status": "SUPPORTED"
@@ -42,10 +42,12 @@
       "RVA20"
     ],
     "kernel": [
-      "UNKNOWN-6.1"
+      "RVCK-6.6",
+      "VENDOR-5.4"
     ],
     "userspace": [
-      "All"
+      "Headless",
+      "xfce4"
     ],
     "uri": "products/sipeed/licheepi_4a.json",
     "status": "SUPPORTED"
@@ -72,5 +74,4 @@
     "uri": "products/starfive/visionfive2.json",
     "status": "WIP"
   }
- 
 ]
