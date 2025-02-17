@@ -787,7 +787,6 @@ $border-color: #f1faff;
       .menu-text {
         max-width: 120px;
         white-space: nowrap;
-        overflow: hidden;
         text-overflow: ellipsis;
         display: inline-block;
       }
