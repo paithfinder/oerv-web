@@ -64,7 +64,11 @@ const searchSuggestions = computed(() => {
       item =>
         item.name.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
         item.vendor.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-        (item.soc && item.soc.name && item.soc.name.toLowerCase().includes(searchKeyword.value.toLowerCase()))
+        (item.soc &&
+          item.soc.name &&
+          item.soc.name
+            .toLowerCase()
+            .includes(searchKeyword.value.toLowerCase()))
     )
     .slice(0, 5);
 });
@@ -106,7 +110,9 @@ const filteredProductList = computed(() => {
       product =>
         product.name.toLowerCase().includes(keyword) ||
         product.vendor.toLowerCase().includes(keyword) ||
-        (product.soc && product.soc.name && product.soc.name.toLowerCase().includes(keyword))
+        (product.soc &&
+          product.soc.name &&
+          product.soc.name.toLowerCase().includes(keyword))
     );
   }
 
@@ -115,6 +121,12 @@ const filteredProductList = computed(() => {
 
 const getMenuTitle = computed(() => menuId => {
   if (selectedOptions.value[menuId]) {
+    if (
+      typeof selectedOptions.value[menuId] === "object" &&
+      selectedOptions.value[menuId].vendor
+    ) {
+      return `${selectedOptions.value[menuId].vendor} ${selectedOptions.value[menuId].name}`;
+    }
     return selectedOptions.value[menuId];
   }
   return dropMenu.value.find(item => item.id === menuId)?.name;
@@ -124,23 +136,26 @@ const getTruncatedTitle = computed(() => menuId => {
   const title = getMenuTitle.value(menuId);
   const span = document.createElement("span");
   span.style.font = "500 24px PingFang SC-Regular";
-  span.textContent = title;
   document.body.appendChild(span);
-  const width = span.offsetWidth;
-  document.body.removeChild(span);
-
-  if (width <= 120) return title;
-
+  span.textContent = title;
+  const fullWidth = span.offsetWidth;
+  if (fullWidth <= 120) {
+    document.body.removeChild(span);
+    return title;
+  }
   span.textContent = "...";
-
   let truncatedText = title;
   while (truncatedText.length > 0) {
     span.textContent = truncatedText + "...";
-    if (span.offsetWidth <= 120) break;
+    if (span.offsetWidth <= 120) {
+      document.body.removeChild(span);
+      return truncatedText + "...";
+    }
     truncatedText = truncatedText.slice(0, -1);
   }
 
-  return truncatedText + "...";
+  document.body.removeChild(span);
+  return "...";
 });
 
 const handleSearchInput = e => {
@@ -194,8 +209,8 @@ const handleInputBlur = () => {
 
 const handleSuggestionClick = item => {
   if (
-    item.soc && 
-    item.soc.name && 
+    item.soc &&
+    item.soc.name &&
     item.soc.name.toLowerCase().includes(searchKeyword.value.toLowerCase())
   ) {
     searchKeyword.value = item.soc.name;
@@ -416,12 +431,14 @@ onMounted(async () => {
           >
             <div class="suggestion-content">
               <div class="suggestion-name">
-                {{ 
-                  item.soc && 
-                  item.soc.name && 
-                  item.soc.name.toLowerCase().includes(searchKeyword.toLowerCase()) 
-                    ? item.soc.name 
-                    : item.name 
+                {{
+                  item.soc &&
+                  item.soc.name &&
+                  item.soc.name
+                    .toLowerCase()
+                    .includes(searchKeyword.toLowerCase())
+                    ? item.soc.name
+                    : item.name
                 }}
               </div>
             </div>
@@ -820,8 +837,7 @@ $border-color: #f1faff;
     .options {
       position: absolute;
       top: 100%;
-      width: 100%;
-      width: 240px;
+      min-width: 16em;
       height: auto;
       padding: 16px 0;
       box-sizing: border-box;
@@ -840,7 +856,13 @@ $border-color: #f1faff;
         font-size: 20px;
         color: #666666;
         transition: all 0.3s ease;
-        word-break: break-all;
+        white-space: nowrap;
+
+        #option-name {
+          flex: 0 1 auto;
+          white-space: nowrap;
+          overflow: visible;
+        }
 
         .selector {
           flex-shrink: 0;
@@ -861,13 +883,6 @@ $border-color: #f1faff;
             left: 50%;
             transform: translate(-50%, -50%);
           }
-        }
-
-        #option-name {
-          flex: 1;
-          word-wrap: break-word;
-          min-width: 0;
-          line-height: 1.4;
         }
 
         &:hover {

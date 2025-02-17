@@ -462,7 +462,6 @@ $border-color: #f1faff;
   padding: 32px 0 32px 32px;
 
   .sys-wrapper {
-    max-height: 348px;
     overflow-y: auto;
     padding-right: 16px;
     box-sizing: border-box;
