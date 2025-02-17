@@ -20,20 +20,20 @@ const isSticky = ref(false);
 const showSearchInput = ref(false);
 const showBackToTop = ref(false);
 const productList = ref([]);
-const randomPlaceholder = ref('');
+const randomPlaceholder = ref("");
 const placeholderTimer = ref(null);
-const lastPlaceholder = ref('');
+const lastPlaceholder = ref("");
 
 const nameMapping = {
   soc: "SoC型号",
   isa: "指令集特性",
   kernel: "内核版本",
-  userspace: "软件包场景",
+  features: "镜像特性",
   status: "支持状态"
 };
 
 const dropMenu = computed(() => {
-  const keys = ["soc", "isa", "kernel", "userspace", "status"];
+  const keys = ["soc", "isa", "kernel", "features", "status"];
   return keys.map((key, index) => {
     const items = [
       ...new Set(
@@ -63,7 +63,8 @@ const searchSuggestions = computed(() => {
     .filter(
       item =>
         item.name.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-        item.vendor.toLowerCase().includes(searchKeyword.value.toLowerCase())
+        item.vendor.toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
+        (item.soc && item.soc.name && item.soc.name.toLowerCase().includes(searchKeyword.value.toLowerCase()))
     )
     .slice(0, 5);
 });
@@ -104,7 +105,8 @@ const filteredProductList = computed(() => {
     filtered = filtered.filter(
       product =>
         product.name.toLowerCase().includes(keyword) ||
-        product.vendor.toLowerCase().includes(keyword)
+        product.vendor.toLowerCase().includes(keyword) ||
+        (product.soc && product.soc.name && product.soc.name.toLowerCase().includes(keyword))
     );
   }
 
@@ -191,7 +193,15 @@ const handleInputBlur = () => {
 };
 
 const handleSuggestionClick = item => {
-  searchKeyword.value = item.name;
+  if (
+    item.soc && 
+    item.soc.name && 
+    item.soc.name.toLowerCase().includes(searchKeyword.value.toLowerCase())
+  ) {
+    searchKeyword.value = item.soc.name;
+  } else {
+    searchKeyword.value = item.name;
+  }
   showSuggestions.value = false;
 };
 
@@ -238,7 +248,7 @@ const viewportWidth = ref(0);
 const isdummy = ref(false);
 const changeViewportWidth = () => {
   viewportWidth.value = document.body.scrollWidth;
-  changeIsDummy(viewportWidth.value)
+  changeIsDummy(viewportWidth.value);
 };
 
 onUnmounted(() => {
@@ -249,13 +259,13 @@ onUnmounted(() => {
 });
 watch(viewportWidth, newValue => {
   console.log(newValue, "viewportWidth变化了");
-  changeIsDummy(newValue)
+  changeIsDummy(newValue);
 });
-watch(filteredProductList,newValue=>{
-  console.log(newValue.length,'我是筛选数目')
-  changeIsDummy(viewportWidth.value)
-})
-const changeIsDummy=(value)=>{
+watch(filteredProductList, newValue => {
+  console.log(newValue.length, "我是筛选数目");
+  changeIsDummy(viewportWidth.value);
+});
+const changeIsDummy = value => {
   if (Math.floor((value + 16) / 256) > filteredProductList.value.length) {
     isdummy.value = false;
     let elements = document.querySelectorAll(".dummy-wrapper");
@@ -271,8 +281,8 @@ const changeIsDummy=(value)=>{
       element.style.display = "block";
     });
   }
-}
-const fetchProductList=async()=>{
+};
+const fetchProductList = async () => {
   try {
     const response = await getProductList();
     productList.value = response.data;
@@ -280,20 +290,22 @@ const fetchProductList=async()=>{
   } catch (error) {
     console.error("获取产品列表失败:", error);
   }
-
-}
+};
 
 const getRandomProduct = () => {
   if (!productList.value || productList.value.length === 0) {
-    return '';
+    return "";
   }
-  
+
   let newPlaceholder;
   do {
     const randomIndex = Math.floor(Math.random() * productList.value.length);
     newPlaceholder = productList.value[randomIndex].name;
-  } while (newPlaceholder === lastPlaceholder.value && productList.value.length > 1);
-  
+  } while (
+    newPlaceholder === lastPlaceholder.value &&
+    productList.value.length > 1
+  );
+
   lastPlaceholder.value = newPlaceholder;
   return newPlaceholder;
 };
@@ -389,7 +401,7 @@ onMounted(async () => {
             src="@/assets/icons/home/Group 2.png"
             alt=""
           />
-          <button v-else class="search-text" type="button" >搜 索</button>
+          <button v-else class="search-text" type="button">搜 索</button>
         </div>
 
         <div
@@ -403,7 +415,15 @@ onMounted(async () => {
             @click="handleSuggestionClick(item)"
           >
             <div class="suggestion-content">
-              <div class="suggestion-name">{{ item.name }}</div>
+              <div class="suggestion-name">
+                {{ 
+                  item.soc && 
+                  item.soc.name && 
+                  item.soc.name.toLowerCase().includes(searchKeyword.toLowerCase()) 
+                    ? item.soc.name 
+                    : item.name 
+                }}
+              </div>
             </div>
           </div>
         </div>
@@ -442,7 +462,9 @@ onMounted(async () => {
           @click="handleOptionSelect(item.id, option, $event)"
         >
           <span class="selector"></span>
-          <span id="option-name">{{ option }}</span>
+          <span id="option-name">{{
+            option.vendor ? option.vendor + " " + option.name : option
+          }}</span>
         </li>
       </div>
     </ul>

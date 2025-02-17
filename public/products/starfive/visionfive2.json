@@ -6,6 +6,10 @@
   },
   "soc": {
     "name": "JH7110",
+    "vendor": {
+      "name": "StarFive",
+      "homepage": "https://www.starfivetech.com"
+    },
     "harts": [
       {
         "name": "SiFive U74",

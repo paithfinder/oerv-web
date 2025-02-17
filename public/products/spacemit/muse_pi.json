@@ -6,6 +6,10 @@
   },
   "soc": {
     "name": "M1",
+    "vendor": {
+      "name": "SpacemiT",
+      "homepage": "https://www.spacemit.com/"
+    },
     "harts": [
       {
         "name": "SpacemiT X60",

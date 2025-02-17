@@ -6,11 +6,17 @@
   },
   "soc": {
     "name": "virt",
+    "vendor": {
+      "name": "Qemu",
+      "homepage": "https://www.qemu.org/"
+    },
     "harts": []
   },
   "type": "Emulated",
   "status": "SUPPORTED",
-  "pictures": [],
+  "pictures": [
+    "resources/qemu/Qemu_logo.svg"
+  ],
   "os": {
     "openEuler": [
       {

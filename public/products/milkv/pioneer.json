@@ -6,6 +6,10 @@
   },
   "soc": {
     "name": "SG2042",
+    "vendor": {
+      "name": "SOPHGO",
+      "homepage": "https://sophgo.com/"
+    },
     "harts": [
       {
         "name": "XuanTie C920",

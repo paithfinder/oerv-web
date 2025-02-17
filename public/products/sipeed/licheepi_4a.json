@@ -6,6 +6,10 @@
   },
   "soc": {
     "name": "TH1520",
+    "vendor": {
+      "name": "T-HEAD",
+      "homepage": "https://www.t-head.cn"
+    },
     "harts": [
       {
         "name": "Xuantie C910",
@@ -16,7 +20,9 @@
   },
   "type": "SoM+Carrier",
   "status": "SUPPORTED",
-  "pictures": [],
+  "pictures": [
+    "resources/sipeed/lpi4a/lpi4a.png"
+  ],
   "hardware": {
     "ram": {
       "type": "LPDDR4X",

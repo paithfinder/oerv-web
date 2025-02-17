@@ -3,7 +3,10 @@
     "name": "Pioneer",
     "vendor": "Milk-V",
     "thumbnail": "resources/milkv/pioneer/milk-v-pioneer-board_png_gallery-lg.jpg",
-    "soc": "SG2042",
+    "soc": {
+      "name": "SG2042",
+      "vendor": "SOPHGO"
+    },
     "isa": [
       "RVA20"
     ],
@@ -12,6 +15,11 @@
     ],
     "userspace": [
       "xfce4"
+    ],
+    "features": [
+      "LINUXBOOT",
+      "FDT",
+      "EFI"
     ],
     "uri": "products/milkv/pioneer.json",
     "status": "SUPPORTED"
@@ -19,8 +27,11 @@
   {
     "name": "qemu-system",
     "vendor": "Qemu",
-    "thumbnail": null,
-    "soc": "virt",
+    "thumbnail": "resources/qemu/Qemu_logo.svg",
+    "soc": {
+      "name": "virt",
+      "vendor": "Qemu"
+    },
     "isa": [
       "RVA20"
     ],
@@ -30,14 +41,21 @@
     "userspace": [
       "xfce4"
     ],
+    "features": [
+      "EFI",
+      "FDT"
+    ],
     "uri": "products/qemu/system.json",
     "status": "SUPPORTED"
   },
   {
     "name": "LicheePi 4A",
     "vendor": "Sipeed",
-    "thumbnail": null,
-    "soc": "TH1520",
+    "thumbnail": "resources/sipeed/lpi4a/lpi4a.png",
+    "soc": {
+      "name": "TH1520",
+      "vendor": "T-HEAD"
+    },
     "isa": [
       "RVA20"
     ],
@@ -49,6 +67,11 @@
       "Headless",
       "xfce4"
     ],
+    "features": [
+      "UBOOT",
+      "FDT",
+      "RawImage"
+    ],
     "uri": "products/sipeed/licheepi_4a.json",
     "status": "SUPPORTED"
   },
@@ -56,10 +79,14 @@
     "name": "MUSE PI",
     "vendor": "SpacemiT",
     "thumbnail": null,
-    "soc": "M1",
+    "soc": {
+      "name": "M1",
+      "vendor": "SpacemiT"
+    },
     "isa": [],
     "kernel": [],
     "userspace": [],
+    "features": [],
     "uri": "products/spacemit/muse_pi.json",
     "status": "WIP"
   },
@@ -67,10 +94,14 @@
     "name": "VisionFive 2",
     "vendor": "StarFive",
     "thumbnail": null,
-    "soc": "JH7110",
+    "soc": {
+      "name": "JH7110",
+      "vendor": "StarFive"
+    },
     "isa": [],
     "kernel": [],
     "userspace": [],
+    "features": [],
     "uri": "products/starfive/visionfive2.json",
     "status": "WIP"
   }
