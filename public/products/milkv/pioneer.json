@@ -131,13 +131,56 @@
                 }
               }
             ],
-            "docs": []
+            "docs": [
+              "docs/milkv/pioneer-oerv-linuxboot.md"
+            ]
           }
         ]
       },
       {
         "name": "24.03-LTS",
         "imagesuites": [
+          {
+            "name": "sg2042-24.03",
+            "kernel": {
+              "type": "RVCK",
+              "branch": "6.6",
+              "version": "6.6.0-27.0.0.31.oe2403"
+            },
+            "userspace": "xfce4",
+            "isa": {
+              "profile": "RVA20",
+              "extensions": []
+            },
+            "type": "Installer",
+            "features": [
+              "LINUXBOOT",
+              "FDT"
+            ],
+            "files": [
+              {
+                "url": "https://mirror.isrc.ac.cn/openeuler/openEuler-24.03-LTS/embedded_img/riscv64/SG2042/openEuler-24.03-LTS-riscv64-sg2042.img.zip",
+                "tags": [
+                  "system-image"
+                ],
+                "hash": {
+                  "sha256": "9d23fbad04ebdccb216991995963f8021674d7c9f3a5b6f222f35da82244e228"
+                }
+              },
+              {
+                "url": "https://mirror.isrc.ac.cn/openeuler/openEuler-24.03-LTS/embedded_img/riscv64/SG2042/sg2042_firmware_linuxboot.img.zip",
+                "tags": [
+                  "firmware"
+                ],
+                "hash": {
+                  "sha256": "1d1e47ce2cbbeda528c4338030f914c4905af89fc939783e3ff80fefa935c57d"
+                }
+              }
+            ],
+            "docs": [
+              "docs/milkv/pioneer-oerv-linuxboot.md"
+            ]
+          },
           {
             "name": "official-24.03",
             "kernel": {

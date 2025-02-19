@@ -17,8 +17,9 @@ Pioneer 出厂时 NOR Flash 固件没有支持基于 EDK2 的 UEFI 启动流程�
 将该镜像恢复到 microSD 卡中。使用 `dd` 命令如下：
 
 ```shell
-export MICROSD_DEV="/dev/sdX"
+MICROSD_DEV="/dev/sdX"
 sudo dd if=sg2042_firmware_uefi.img of="${MICROSD_DEV}" bs=512k conv=sync status=progress oflag=direct
+sudo eject "${MICROSD_DEV}"
 ```
 
 将 `sdX` 替换为实际的 SD 卡块设备路径。
@@ -35,7 +36,9 @@ sudo dd if=sg2042_firmware_uefi.img of="${MICROSD_DEV}" bs=512k conv=sync status
 使用上述工具将该镜像写入至U盘。以 `dd` 为例：
 
 ```shell
-sudo dd if=openEuler-24.03-LTS-riscv64-dvd.iso of="${MICROSD_DEV}" bs=512k conv=sync status=progress oflag=direct
+USBMSB_DEV="/dev/sdX"
+sudo dd if=openEuler-24.03-LTS-riscv64-dvd.iso of="${USBMSB_DEV}" bs=512k conv=sync status=progress oflag=direct
+sudo eject "${USBMSB_DEV}"
 ```
 
 ## 启动系统

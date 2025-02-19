@@ -243,9 +243,7 @@
               "profile": "RVA20"
             },
             "type": "RawDiskImage",
-            "features": [
-              "RawImage"
-            ],
+            "features": [],
             "files": [
               {
                 "url": "https://mirror.iscas.ac.cn/openeuler-sig-riscv/eulaceura/image/23H1/bootpart-licheerv.bin.xz"

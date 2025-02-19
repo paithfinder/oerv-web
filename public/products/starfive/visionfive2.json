@@ -28,7 +28,9 @@
   },
   "type": "SBC",
   "status": "WIP",
-  "pictures": [],
+  "pictures": [
+    "resources/starfive/vf2/vf2.jpg"
+  ],
   "hardware": {
     "ram": {
       "type": "LPDDR4",

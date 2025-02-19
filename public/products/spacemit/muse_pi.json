@@ -20,7 +20,10 @@
   },
   "type": "SBC",
   "status": "WIP",
-  "pictures": [],
+  "pictures": [
+    "resources/spacemit/muse-pi/musepi_front.webp",
+    "resources/spacemit/muse-pi/musepi_back.webp"
+  ],
   "hardware": {
     "ram": {
       "type": "LPDDR4X",
